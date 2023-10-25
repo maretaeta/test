@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Toko {
+  id_toko     Int         @id @default(autoincrement())
+  namatoko    String?     @unique
+  notlp_toko  String?     @db.VarChar(20)
+  alamat_toko String?
+  penjualan   Penjualan[]
+}
+
+model Penjualan {
+  id_penjualan       Int             @id @default(autoincrement())
+  createdAt          DateTime        @default(now())
+  nama_toko          String?
+  jenis_product      String?         @db.VarChar(225)
+  nama_product       String?         @db.VarChar(225)
+  ukuran_product     String?         @db.VarChar(50)
+  diskon             Int?
+  totalHarga_product Int?
+  toko               Toko?           @relation(fields: [nama_toko], references: [namatoko])
+  user               Users?          @relation(fields: [userId], references: [id_users])
+  userId             Int?
+  penjualanItems     PenjualanItem[]
+  products           Product[]
+}
+
+model PenjualanItem {
+  id_penjualanItem Int       @id @default(autoincrement())
+  quantity         Int
+  productId        Int
+  penjualanId      Int
+  product          Product   @relation(fields: [productId], references: [id_product])
+  penjualan        Penjualan @relation(fields: [penjualanId], references: [id_penjualan])
+}
+
+model Product {
+  id_product        Int              @id @default(autoincrement())
+  jenis_product     String?          @db.VarChar(225)
+  nama_product      String?          @unique @db.VarChar(225)
+  ukuran_product    String?          @db.VarChar(50)
+  stok_product      Int?
+  harga_product     Int? 
+  keuntungan        Int?
+  hargaJual         Int?
+  createdAt         DateTime         @default(now())
+  productSources    ProductSources[]
+  penjualanProducts Penjualan[]
+  penjualanItems    PenjualanItem[]
+}
+
+model ProductSources {
+  id_productSources             Int      @id @default(autoincrement())
+  createdAt                     DateTime @default(now())
+  nama_toko                     String?
+  alamat_toko                   String?
+  jenis_productSources          String?
+  nama_productSources           String?
+  ukuran_productSources         String?
+  satuan_productSources         String?
+  jumlah_productSources         Int?
+  pembelian_productSources      Int?
+  ongkosProses_productSources   Int?
+  totalPembelian_productSources Int?
+  hargaPerLembar                Int?
+  product                       Product  @relation(fields: [productId], references: [id_product])
+  productId                     Int
+  user                          Users?   @relation(fields: [userId], references: [id_users])
+  userId                        Int?
+}
+
+model Users {
+  id_users       Int              @id @default(autoincrement())
+  nama           String?          @db.VarChar(50)
+  username       String?          @db.VarChar(50)
+  password       String?          @db.VarChar(225)
+  penjualan      Penjualan[]
+  productSources ProductSources[]
+}
