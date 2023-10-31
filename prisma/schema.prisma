@@ -19,9 +19,6 @@ model Penjualan {
   id_penjualan       Int             @id @default(autoincrement())
   createdAt          DateTime        @default(now())
   nama_toko          String?
-  jenis_product      String?         @db.VarChar(225)
-  nama_product       String?         @db.VarChar(225)
-  ukuran_product     String?         @db.VarChar(50)
   diskon             Int?
   totalHarga_product Int?
   toko               Toko?           @relation(fields: [nama_toko], references: [namatoko])
@@ -43,10 +40,10 @@ model PenjualanItem {
 model Product {
   id_product        Int              @id @default(autoincrement())
   jenis_product     String?          @db.VarChar(225)
-  nama_product      String?          @unique @db.VarChar(225)
+  nama_product      String?          @unique
   ukuran_product    String?          @db.VarChar(50)
   stok_product      Int?
-  harga_product     Int? 
+  harga_product     Int?
   keuntungan        Int?
   hargaJual         Int?
   createdAt         DateTime         @default(now())
@@ -69,10 +66,10 @@ model ProductSources {
   ongkosProses_productSources   Int?
   totalPembelian_productSources Int?
   hargaPerLembar                Int?
-  product                       Product  @relation(fields: [productId], references: [id_product])
-  productId                     Int
   user                          Users?   @relation(fields: [userId], references: [id_users])
   userId                        Int?
+  id_product                    Int
+  product                       Product? @relation(fields: [id_product], references: [id_product])
 }
 
 model Users {

@@ -13,9 +13,6 @@ CREATE TABLE "Penjualan" (
     "id_penjualan" SERIAL NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "nama_toko" TEXT,
-    "jenis_product" VARCHAR(225),
-    "nama_product" VARCHAR(225),
-    "ukuran_product" VARCHAR(50),
     "diskon" INTEGER,
     "totalHarga_product" INTEGER,
     "userId" INTEGER,
@@ -37,7 +34,7 @@ CREATE TABLE "PenjualanItem" (
 CREATE TABLE "Product" (
     "id_product" SERIAL NOT NULL,
     "jenis_product" VARCHAR(225),
-    "nama_product" VARCHAR(225),
+    "nama_product" TEXT,
     "ukuran_product" VARCHAR(50),
     "stok_product" INTEGER,
     "harga_product" INTEGER,
@@ -63,7 +60,7 @@ CREATE TABLE "ProductSources" (
     "ongkosProses_productSources" INTEGER,
     "totalPembelian_productSources" INTEGER,
     "hargaPerLembar" INTEGER,
-    "productId" INTEGER NOT NULL,
+    "id_product" INTEGER NOT NULL,
     "userId" INTEGER,
 
     CONSTRAINT "ProductSources_pkey" PRIMARY KEY ("id_productSources")
@@ -110,10 +107,10 @@ ALTER TABLE "PenjualanItem" ADD CONSTRAINT "PenjualanItem_productId_fkey" FOREIG
 ALTER TABLE "PenjualanItem" ADD CONSTRAINT "PenjualanItem_penjualanId_fkey" FOREIGN KEY ("penjualanId") REFERENCES "Penjualan"("id_penjualan") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ProductSources" ADD CONSTRAINT "ProductSources_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id_product") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "ProductSources" ADD CONSTRAINT "ProductSources_userId_fkey" FOREIGN KEY ("userId") REFERENCES "Users"("id_users") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ProductSources" ADD CONSTRAINT "ProductSources_userId_fkey" FOREIGN KEY ("userId") REFERENCES "Users"("id_users") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "ProductSources" ADD CONSTRAINT "ProductSources_id_product_fkey" FOREIGN KEY ("id_product") REFERENCES "Product"("id_product") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_PenjualanToProduct" ADD CONSTRAINT "_PenjualanToProduct_A_fkey" FOREIGN KEY ("A") REFERENCES "Penjualan"("id_penjualan") ON DELETE CASCADE ON UPDATE CASCADE;

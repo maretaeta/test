@@ -13,13 +13,24 @@ export class penjualanService {
   constructor(private prisma: PrismaService) {}
 
   // get penjualan
-  async getAllPenjualan(): Promise<penjualan[]> {
-    return this.prisma.penjualan.findMany({
-      include: {
-        products: true,
+async getAllPenjualan(): Promise<penjualan[]> {
+  return this.prisma.penjualan.findMany({
+    include: {
+      penjualanItems: {
+        include: {
+          product: {
+            select: {
+              jenis_product: true,
+              nama_product: true,
+              ukuran_product: true,
+              harga_product: true,
+            },
+          },
+        },
       },
-    });
-  }
+    },
+  });
+}
 
   // get detail penjualan
   async getPenjualan(id_penjualan: number): Promise<penjualan | null> {
@@ -36,10 +47,11 @@ export class penjualanService {
   }
 
   // create penjualan
-  async createPenjualan(
-    data: PenjualanCreateInput,
-    selectedProducts: SelectedProduct[]
-  ): Promise<CreatePenjualanResponse> {
+async createPenjualan(
+  data: PenjualanCreateInput,
+  selectedProducts: SelectedProduct[]
+): Promise<CreatePenjualanResponse> {
+  try {
     if (!data || typeof data.diskon === 'undefined') {
       throw new Error('Data atau diskon tidak valid');
     }
@@ -89,7 +101,8 @@ export class penjualanService {
       data: {
         diskon: data.diskon,
         totalHarga_product: totalHarga,
-        products: {
+        // Create PenjualanItem records for associated products
+        penjualanItems: {
           create: productsWithDetails.map((product) => ({
             quantity: product.quantity,
             productId: product.id_product,
@@ -97,17 +110,70 @@ export class penjualanService {
         },
       },
       include: {
-        products: true,
+        penjualanItems: true,
       },
     });
 
     return { penjualan: createdPenjualan, products: productsWithDetails };
+  } catch (error) {
+    throw new Error(`Gagal membuat penjualan: ${error.message}`);
   }
 }
 
+
   // update
+async updatePenjualan(id_penjualan: number, updatedData: PenjualanCreateInput): Promise<penjualan> {
+  return this.prisma.penjualan.update({
+    where: { id_penjualan },
+    data: updatedData,
+    include: {
+      products: true,
+    },
+  });
+}
+
   // delete
+  async deletePenjualan(id_penjualan: number): Promise<void> {
+  await this.prisma.penjualan.delete({
+    where: { id_penjualan },
+  });
+}
+
+
   // total penjualan
+async calculateTotalProductsTerjualForAll(): Promise<number> {
+    const allPenjualan = await this.prisma.penjualan.findMany({
+        include: {
+            penjualanItems: {
+                select: {
+                    quantity: true,
+                },
+            },
+        },
+    });
+
+    const totalProductsTerjual = allPenjualan.reduce(
+        (total, penjualan) => {
+            const penjualanTotal = penjualan.penjualanItems.reduce(
+                (itemTotal, item) => itemTotal + (item.quantity || 0),
+                0
+            );
+            return total + penjualanTotal;
+        },
+        0
+    );
+
+    return totalProductsTerjual;
+}
+
+
+
+
+
+
+}
+
+
   
 
 interface CreatePenjualanResponse {

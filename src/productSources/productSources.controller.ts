@@ -1,46 +1,55 @@
-import { Controller, Get, Param, Post, Put, Delete, Body } from "@nestjs/common";
-import { productSources } from "./productSources.model";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { productSourcesService } from "./productSources.service";
-
+import { Controller, Get, Post, Put, Delete,Query,  Body, Param } from "@nestjs/common";
+import { ProductSourcesService } from "./productSources.service";
+import { ProductSources } from "./productSources.model";
+import { Prisma } from "@prisma/client"; 
 
 @Controller('api/v1/pembelian')
-export class productSourcesController{
-    constructor(
-        private readonly productSourcesService: productSourcesService){}
-
+export class productSourcesController {
+  constructor(private readonly productSourcesService: ProductSourcesService) {}
 
     @Get()
-    async getAllProductSources(): Promise<productSources[]> {
+    async getAllProductSources(): Promise<ProductSources[]> {
         return this.productSourcesService.getAllProductSources();
     }
 
-    // @Get(':id_productSources')
-    // async getProductSources(@Param('id_productSources') id_productSources:number):Promise<productSources | null >{
-    //     return this.productSourcesService.getProductSources(id_productSources)
-    // }
 
     @Post('create')
-    async postProductSources(@Body() postproductSources:productSources):Promise<productSources>{
-        return this.productSourcesService.createProductSources(postproductSources)
+    async postProductSources(@Body() postProductSources: Prisma.ProductSourcesCreateInput): Promise<ProductSources> {
+        return this.productSourcesService.createProductSources(postProductSources);
     }
+
 
     @Put('update/:id_productSources')
-    async updateproductSources(@Param('id_productSources') id_productSources:number, @Body() postproductSources: productSources):Promise<productSources>{
-        return this.productSourcesService.updateProductSource(id_productSources, postproductSources)
+    async updateProductSources(@Param('id_productSources') id_productSources: number, @Body() postProductSources: Prisma.ProductSourcesCreateInput): Promise<ProductSources> {
+        return this.productSourcesService.updateProductSource(id_productSources, postProductSources);
     }
 
-    @Delete(':id_productSources')
-    async deleteproductSources(@Param('id_productSources') id_productSources:number){
-        await this.productSourcesService.deleteProductSources(id_productSources)
-        return "productSources Deleted"
-    }
+  @Delete(':id_productSources')
+  async deleteproductSources(@Param('id_productSources') id_productSources: number) {
+    await this.productSourcesService.deleteProductSources(id_productSources);
+    return "productSources Deleted";
+  }
 
-    @Get('total')
-    async sumTotalStock(): Promise<{ total: number }> {
-        const total = await this.productSourcesService.TotalProductSources();
-        return { total };
-    }
+  @Get('total')
+  async sumTotalStock(): Promise<{ total: number }> {
+    const total = await this.productSourcesService.TotalProductSources();
+    return { total };
+  }
 
-    
+  
+  @Get('filter')
+  async getPenjualanByBulanTahun(
+    @Query('bulan') bulan: number,
+    @Query('tahun') tahun: number,
+  ) {
+    const data = await this.productSourcesService.getPembelianByBulanTahun(bulan, tahun);
+    return data;
+  }
+
+  @Get('sales/:year')
+    async getSalesByYear(@Param('year') year: number) {
+      return this.productSourcesService.getSalesByYear(year);
+}
+
+
 }
