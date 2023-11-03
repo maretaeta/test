@@ -156,7 +156,6 @@ async updateProductSource(id_productSources: number, data: ProductSources): Prom
                 where: { id_product: existingProduct.id_product },
                 data: {
                     stok_product: {
-                        // Increment the stok by the difference in jumlah
                         increment: data.jumlah_productSources - existingProductSource.jumlah_productSources,
                     },
                     harga_product: hargaPerLembar,

@@ -57,10 +57,16 @@ export class penjualanController {
         }
     }
 
-@Get('total')
-async getTotalPenjualan(): Promise<{ total: number }> {
-    const total = await this.penjualanService.calculateTotalProductsTerjualForAll();
-    return { total };
-}
+    @Get('total')
+    async getTotalPenjualan(): Promise<{ total: number }> {
+        const total = await this.penjualanService.calculateTotalProductsTerjualForAll();
+        return { total };
+    }
+
+    @Get('top')
+    async getTopTokoByPenjualan() {
+        const topToko = await this.penjualanService.getTopTokoByPenjualan();
+        return topToko;
+    }
 
 }

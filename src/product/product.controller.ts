@@ -13,11 +13,6 @@ export class productController{
         return this.productService.getAllProduct()
     }
 
-    // @Get(':id_product')
-    // async getProduct(@Param('id_product') id_product: number): Promise<product | null> {
-    //     return this.productService.getProduct(id_product);
-    // }
-
     @Post('create')
     async postProduct(@Body() postProduct:product):Promise<product>{
         return this.productService.createProduct(postProduct)

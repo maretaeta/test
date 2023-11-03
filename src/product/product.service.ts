@@ -11,14 +11,6 @@ export class productService {
         return this.prisma.product.findMany()
     }
 
-
-    
-    // async getProduct(id_product:number):Promise<product | null>{
-    //     return this.prisma.product.findUnique({where: {id_product:Number(id_product)}})
-    // }
-
-
-
     // create produk
     async createProduct(data: product):Promise<product>{
         return this.prisma.product.create({

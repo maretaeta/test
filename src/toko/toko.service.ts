@@ -21,12 +21,6 @@ export class tokoService {
   }
 
   async updateToko(id_toko: number, data: toko): Promise<toko> {
-    // try {
-    //   const existingToko = await this.prisma.toko.findUnique({ where: { id_toko: id_toko } });
-    //   if (!existingToko) {
-    //     throw new NotFoundException(`Toko with ID ${id_toko} not found`);
-    //   }
-
       return this.prisma.toko.update({
         where: {id_toko:Number(id_toko)},
         data:{
@@ -36,24 +30,11 @@ export class tokoService {
         }
         
       });
-//     } catch (error) {
-//       throw error; 
-//     }
-//   }
     }
 
   async deleteToko(id_toko: number): Promise<toko> {
-    // try {
-    //   const existingToko = await this.prisma.toko.findUnique({ where: { id_toko: id_toko } });
-    //   if (!existingToko) {
-    //     throw new NotFoundException(`Toko with ID ${id_toko} not found`);
-    //   }
-
       return this.prisma.toko.delete({
         where: { id_toko:Number (id_toko) },
       });
-    // } catch (error) {
-    //   throw error; 
-    // }
   }
 }
