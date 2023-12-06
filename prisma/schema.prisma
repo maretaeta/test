@@ -79,4 +79,25 @@ model Users {
   password       String?          @db.VarChar(225)
   penjualan      Penjualan[]
   productSources ProductSources[]
+  pendapatan     Pendapatan[]
+  karyawan       Karyawan[]
+}
+
+model Pendapatan {
+  id_pendapatan Int      @id @default(autoincrement())
+  jumlah        Int
+  tanggal       DateTime
+  keterangan    String?
+  user          Users?   @relation(fields: [userId], references: [id_users])
+  userId        Int?
+}
+
+model Karyawan {
+  id_karyawan   Int       @id @default(autoincrement())
+  nama_karyawan String?
+  jabatan       String?
+  gaji          Int?
+  tanggal_masuk DateTime?
+  user          Users?    @relation(fields: [userId], references: [id_users])
+  userId        Int?
 }

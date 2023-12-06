@@ -19,7 +19,7 @@ export class productSourcesController {
     }
 
 
-    @Put('update/:id_productSources')
+  @Put('update/:id_productSources')
     async updateProductSources(@Param('id_productSources') id_productSources: number, @Body() postProductSources: Prisma.ProductSourcesCreateInput): Promise<ProductSources> {
         return this.productSourcesService.updateProductSource(id_productSources, postProductSources);
     }

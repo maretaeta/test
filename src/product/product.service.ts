@@ -33,11 +33,38 @@ export class productService {
     }
 
     // delete barang
-    async deleteProduct(id_product:number):Promise<product>{
+    async deleteProduct(id_product: number): Promise<product> {
+    try {
+        const productSourcesExists = await this.prisma.productSources.findMany({
+            where: { id_product: Number(id_product) },
+        });
+
+        if (productSourcesExists.length > 0) {
+            await this.prisma.productSources.deleteMany({
+                where: { id_product: Number(id_product) },
+            });
+        }
+
+        // Check for PenjualanItem records referencing the product
+        const penjualanItemsExists = await this.prisma.penjualanItem.findMany({
+            where: { productId: Number(id_product) },
+        });
+
+        if (penjualanItemsExists.length > 0) {
+            await this.prisma.penjualanItem.deleteMany({
+                where: { productId: Number(id_product) },
+            });
+        }
+
         return this.prisma.product.delete({
-            where:{id_product:Number(id_product)}
-        })
+            where: { id_product: Number(id_product) },
+        });
+    } catch (error) {
+        console.error(error);
+        throw new Error('Failed to delete product or related records.');
     }
+}
+
 
     // total barang yang ada
     async sumTotalStock(): Promise<number> {

@@ -6,7 +6,7 @@ async function bootstrap() {
     const app = await NestFactory.create(AppModule);
 
     const corsOptions = {
-      origin: 'http://localhost:5173', // Update the origin to match your Vue.js app
+      origin: 'http://localhost:5173', 
       methods: 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS',
     };
 

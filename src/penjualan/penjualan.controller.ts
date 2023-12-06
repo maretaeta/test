@@ -12,6 +12,11 @@ export class penjualanController {
         return this.penjualanService.getAllPenjualan();
     }
 
+    @Get('detail/:id_penjualan') 
+    async getPenjualan(@Param('id_penjualan') id_penjualan: number): Promise<penjualan | null> {
+        return this.penjualanService.getPenjualan(id_penjualan);
+    }
+
     @Post('create')
     async createPenjualan(
         @Body() requestData: {
@@ -43,7 +48,7 @@ export class penjualanController {
         return this.penjualanService.updatePenjualan(id_penjualan, postPenjualan);
     }
 
-    @Delete(':id_penjualan')
+    @Delete('delete/:id_penjualan')
     async deletePenjualan(@Param('id_penjualan') id_penjualan: number) {
         try {
             await this.penjualanService.deletePenjualan(id_penjualan);

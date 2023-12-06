@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 
 export class ProductSources implements Prisma.ProductSourcesCreateInput {
-   id_productSources?: number;
+  id_productSources?: number;
   nama_toko?: string;
   alamat_toko?: string;
   jenis_productSources?: string;

@@ -32,20 +32,27 @@ export class penjualanService {
     });
   }
 
-  // get detail penjualan
-  async getPenjualan(id_penjualan: number): Promise<penjualan | null> {
-    if (typeof id_penjualan !== 'number') {
-      throw new Error('ID penjualan harus berupa angka');
-    }
-
-    return this.prisma.penjualan.findUnique({
-      where: { id_penjualan },
-      include: {
-        toko: true,
-        products: true,
+// get detail penjualan
+async getPenjualan(id_penjualan: number): Promise<penjualan | null> {
+  return this.prisma.penjualan.findUnique({
+    where: { id_penjualan: Number(id_penjualan) },
+    include: {
+      penjualanItems: {
+        include: {
+          product: {
+            select: {
+              jenis_product: true, 
+              nama_product: true,
+              ukuran_product: true,
+              harga_product: true 
+            },
+          },
+        },
       },
-    });
-  }
+    },
+  });
+}
+
 
 
   // create penjualan
@@ -154,37 +161,46 @@ export class penjualanService {
 
   // delete
   async deletePenjualan(id_penjualan: number): Promise<void> {
-    await this.prisma.penjualan.delete({
-      where: { id_penjualan },
+     try {
+    // Hapus terlebih dahulu data terkait di tabel anak (penjualanItems)
+    await this.prisma.penjualanItem.deleteMany({
+      where: {
+        penjualanId:Number (id_penjualan),
+      },
     });
+
+    await this.prisma.penjualan.delete({
+      where: {
+        id_penjualan: Number (id_penjualan),
+      },
+    });
+  } catch (error) {
+    console.error('Gagal menghapus penjualan:', error);
+    throw new Error('Terjadi kesalahan saat menghapus penjualan');
   }
+}
 
 
   // total penjualan
   async calculateTotalProductsTerjualForAll(): Promise<number> {
-      const allPenjualan = await this.prisma.penjualan.findMany({
-          include: {
-              penjualanItems: {
-                  select: {
-                      quantity: true,
-                  },
-              },
-          },
-      });
+  try {
+    const allPenjualanItems = await this.prisma.penjualanItem.findMany({
+      select: {
+        quantity: true,
+      },
+    });
 
-    const totalProductsTerjual = allPenjualan.reduce(
-        (total, penjualan) => {
-            const penjualanTotal = penjualan.penjualanItems.reduce(
-                (itemTotal, item) => itemTotal + (item.quantity || 0),
-                0
-            );
-            return total + penjualanTotal;
-        },
-        0
+    const totalProductsTerjual = allPenjualanItems.reduce(
+      (total, penjualanItem) => total + (penjualanItem.quantity || 0),
+      0
     );
 
     return totalProductsTerjual;
+  } catch (error) {
+    console.error('Error calculating total products terjual:', error);
+    throw new Error('Error calculating total products terjual');
   }
+}
 
 
   // Filter dan urutkan toko berdasarkan penjualan terbanyak

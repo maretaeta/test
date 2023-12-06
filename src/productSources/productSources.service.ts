@@ -37,7 +37,7 @@ export class ProductSourcesService {
 
 	// buat pembelian
     async createProductSources(data: ProductSources): Promise<ProductSources> {
-        // Cari data berdasarkan jenis, nama, dan ukuran produk
+
         let existingProduct = await this.prisma.product.findFirst({
             where: {
                 jenis_product: data.jenis_productSources,
@@ -53,7 +53,7 @@ export class ProductSourcesService {
                 where: { id_product: existingProduct.id_product },
                 data: {
                     stok_product: {
-                        increment: data.jumlah_productSources,
+                        increment: Number(data.jumlah_productSources),
                     },
                 },
             });
@@ -67,9 +67,10 @@ export class ProductSourcesService {
                     jenis_product: data.jenis_productSources,
                     nama_product: data.nama_productSources,
                     ukuran_product: data.ukuran_productSources,
-                    stok_product: data.jumlah_productSources,
+                    stok_product: Number(data.jumlah_productSources),
                     harga_product: harga,
                 },
+            
             });
 
             existingProduct = newProduct;
@@ -96,10 +97,10 @@ export class ProductSourcesService {
             nama_productSources: data.nama_productSources,
             ukuran_productSources: data.ukuran_productSources,
             satuan_productSources: data.satuan_productSources,
-            jumlah_productSources: data.jumlah_productSources,
-            pembelian_productSources: data.pembelian_productSources,
-            ongkosProses_productSources: data.ongkosProses_productSources,
-            totalPembelian_productSources: totalHarga,
+            jumlah_productSources: Number(data.jumlah_productSources),
+            pembelian_productSources: Number(data.pembelian_productSources),
+            ongkosProses_productSources: Number(data.ongkosProses_productSources),
+            totalPembelian_productSources: Number(totalHarga),
             hargaPerLembar: harga,
             product: {
                 connect: { id_product: existingProduct.id_product },
@@ -117,7 +118,7 @@ async updateProductSource(id_productSources: number, data: ProductSources): Prom
         // Check if there's an existing product source with the specified id
         const existingProductSource = await this.prisma.productSources.findUnique({     
             where: {
-                id_productSources: id_productSources, // Pass it as a number
+                id_productSources:Number(id_productSources)
             }
         });
 
@@ -165,7 +166,7 @@ async updateProductSource(id_productSources: number, data: ProductSources): Prom
 
         // Update the product source
         const updatedProductSource = await this.prisma.productSources.update({
-            where: { id_productSources },
+            where: { id_productSources:Number(id_productSources) },
             data: {
                 nama_toko: data.nama_toko,
                 alamat_toko: data.alamat_toko,
@@ -237,26 +238,26 @@ async updateProductSource(id_productSources: number, data: ProductSources): Prom
     }
 
     async getSalesByYear(year: number): Promise<number[]> {
-    const salesData = [];
-    for (let month = 1; month <= 12; month++) {
-        const startDate = new Date(year, month - 1, 1);
-        const endDate = new Date(year, month, 1);
+        const salesData = [];
+        for (let month = 1; month <= 12; month++) {
+            const startDate = new Date(year, month - 1, 1);
+            const endDate = new Date(year, month, 1);
 
-        const salesForMonth = await this.prisma.productSources.aggregate({
-            _sum: { totalPembelian_productSources: true },
-            where: {
-                createdAt: {
-                    gte: startDate,
-                    lte: endDate,
+            const salesForMonth = await this.prisma.productSources.aggregate({
+                _sum: { totalPembelian_productSources: true },
+                where: {
+                    createdAt: {
+                        gte: startDate,
+                        lte: endDate,
+                    },
                 },
-            },
-        });
+            });
 
-        salesData.push(salesForMonth._sum.totalPembelian_productSources || 0);
-    }
+            salesData.push(salesForMonth._sum.totalPembelian_productSources || 0);
+        }
 
-    return salesData;
-}
+        return salesData;
+    }   
 
 
 
