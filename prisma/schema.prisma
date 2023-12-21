@@ -88,6 +88,7 @@ model Pendapatan {
   jumlah        Int
   tanggal       DateTime
   keterangan    String?
+  tahun         Int?
   user          Users?   @relation(fields: [userId], references: [id_users])
   userId        Int?
 }

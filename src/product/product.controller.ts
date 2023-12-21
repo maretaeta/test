@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Put, Query } from "@nestjs/common";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { productService } from "./product.service";
 import { product } from "./product.model";
@@ -29,9 +29,19 @@ export class productController{
         return "Product Deleted"
     }
 
-   @Get('total')
-    async sumTotalStock(): Promise<{ total: number }> {
-        const total = await this.productService.sumTotalStock();
-        return { total };
-    }
+    @Get('total')
+    async sumTotalStock(@Query('month') monthName?: string): Promise<{ month: string; total: number }> {
+        try {
+            const currentMonth = new Date().toLocaleString('en-US', { month: 'long' });
+            const selectedMonth = monthName || currentMonth;
+
+            const result = await this.productService.sumTotalStockByMonth(selectedMonth);
+
+            return result;
+        } catch (error) {
+            console.error(error);
+            throw new Error('Failed to calculate total stock');
+        }
+}
+
 }

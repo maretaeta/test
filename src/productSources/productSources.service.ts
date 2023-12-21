@@ -1,7 +1,9 @@
 import { PrismaService } from "src/prisma.service";
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { ProductSources } from "./productSources.model";
 import { Prisma } from "@prisma/client";
+import { monthNameToNumber } from "src/utils";
+
 
 @Injectable()
 export class ProductSourcesService {
@@ -35,7 +37,7 @@ export class ProductSourcesService {
     }
 
 
-	// buat pembelian
+	// Create pembelian
     async createProductSources(data: ProductSources): Promise<ProductSources> {
 
         let existingProduct = await this.prisma.product.findFirst({
@@ -46,9 +48,7 @@ export class ProductSourcesService {
             },
         });
 
-        // Jika produk dengan kombinasi tersebut sudah ada
         if (existingProduct) {
-            // Tambahkan jumlahnya
             await this.prisma.product.update({
                 where: { id_product: existingProduct.id_product },
                 data: {
@@ -58,7 +58,6 @@ export class ProductSourcesService {
                 },
             });
         } else {
-            // Jika tidak ada, buat produk baru
             const totalHarga = this.calculateTotalHarga(data.jumlah_productSources, data.pembelian_productSources, data.ongkosProses_productSources);
             const harga = totalHarga / data.jumlah_productSources / 3;
 
@@ -113,9 +112,9 @@ export class ProductSourcesService {
     }
 
 
-async updateProductSource(id_productSources: number, data: ProductSources): Promise<ProductSources | null> {
-    try {
-        // Check if there's an existing product source with the specified id
+    // Update pembelian barang
+    async updateProductSource(id_productSources: number, data: ProductSources): Promise<ProductSources | null> {
+     try {
         const existingProductSource = await this.prisma.productSources.findUnique({     
             where: {
                 id_productSources:Number(id_productSources)
@@ -126,11 +125,9 @@ async updateProductSource(id_productSources: number, data: ProductSources): Prom
             return null;
         }
 
-        // Calculate the new totalHarga and hargaPerLembar
         const totalHarga = this.calculateTotalHarga(data.jumlah_productSources, data.pembelian_productSources, data.ongkosProses_productSources);
         const hargaPerLembar = totalHarga / data.jumlah_productSources / 3;
 
-        // Check if an associated product exists based on the specified criteria
         let existingProduct = await this.prisma.product.findFirst({
             where: {
                 jenis_product: data.jenis_productSources,
@@ -139,7 +136,6 @@ async updateProductSource(id_productSources: number, data: ProductSources): Prom
             },
         });
 
-        // If no associated product exists, create a new product
         if (!existingProduct) {
             const newProduct = await this.prisma.product.create({
                 data: {
@@ -152,7 +148,6 @@ async updateProductSource(id_productSources: number, data: ProductSources): Prom
             });
             existingProduct = newProduct;
         } else {
-            // Update the associated product
             await this.prisma.product.update({
                 where: { id_product: existingProduct.id_product },
                 data: {
@@ -164,7 +159,6 @@ async updateProductSource(id_productSources: number, data: ProductSources): Prom
             });
         }
 
-        // Update the product source
         const updatedProductSource = await this.prisma.productSources.update({
             where: { id_productSources:Number(id_productSources) },
             data: {
@@ -191,6 +185,7 @@ async updateProductSource(id_productSources: number, data: ProductSources): Prom
     }
 }
 
+    // Delete pembelian barang
     async deleteProductSources(id_productSources: number): Promise<ProductSources> {
         return this.prisma.productSources.delete({
             where:{id_productSources:Number(id_productSources)}
@@ -203,16 +198,35 @@ async updateProductSource(id_productSources: number, data: ProductSources): Prom
     }
 
 
-	// total semua barang yang dibeli
-    async TotalProductSources(): Promise<number> {
+	// Total semua barang yang dibeli
+    async TotalProductSources(monthName: string): Promise<{month: string; total: number}> {
+        if (!monthName) {
+            throw new Error('Month name is required');
+        }
+
+        const monthNumber = monthNameToNumber(monthName);
+
+        if (monthNumber === -1) {
+            throw new Error(`Invalid month name: ${monthName}`);
+        }
+
         const totalStock = await this.prisma.productSources.aggregate({
             _sum: { jumlah_productSources: true },
+            where: {
+                AND: [
+                    { createdAt: { gte: new Date(2023, monthNumber - 1, 1) } } as any,
+                    { createdAt: { lt: new Date(2023, monthNumber, 1) } } as any,
+                ],
+            },
         });
 
-        return totalStock._sum.jumlah_productSources || 0;
+        const total = totalStock._sum.jumlah_productSources || 0;
+
+        return { month: monthName, total };
     }
 
-    // Modifikasi layanan ProductSources
+
+    // Data Perbulan Di tahun tersebut
     async getPembelianByBulanTahun(bulan: number, tahun: number): Promise<ProductSources[]> {
         const startDate = new Date(tahun, bulan - 1, 1);
         const endDate = new Date(tahun, bulan, 1);
@@ -237,6 +251,7 @@ async updateProductSource(id_productSources: number, data: ProductSources): Prom
         return data;
     }
 
+    // Filter Grafik Pendapattan
     async getSalesByYear(year: number): Promise<number[]> {
         const salesData = [];
         for (let month = 1; month <= 12; month++) {
@@ -259,8 +274,50 @@ async updateProductSource(id_productSources: number, data: ProductSources): Prom
         return salesData;
     }   
 
+    // Filter berdasarkan Jenis kayu
+    async filterProductSourcesByWoodType(jenisKayu: string): Promise<ProductSources[]> {
+        try {
+        const filteredData = await this.prisma.productSources.findMany({
+            where: {
+            jenis_productSources: jenisKayu,
+            },
+            include: {
+            product: {
+                select: {
+                id_product: true,
+                },
+            },
+            },
+        });
 
+        return filteredData;
+        } catch (error) {
+        console.error('Error filtering products by wood type:', error);
+        throw new NotFoundException('Products not found for the given wood type');
+        }
+    }
 
+    // Filter berdasarkan Date Range
+    async getProductsInDateRange(dateRange: { start: Date; end: Date }): Promise<ProductSources[]> {
+        const { start, end } = dateRange;
 
+        try {
+            const filterData = await this.prisma.productSources.findMany({
+                where: {
+                    createdAt: {
+                        gte: start,
+                        lte: end,
+                    },
+                },
+            });
+
+            return filterData;
+        } catch (error) {
+            console.error('Error fetching products in date range:', error);
+            throw new Error('Error fetching products in date range');
+        }
+    }
 }
+
+
 

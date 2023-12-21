@@ -5,4 +5,5 @@ export class pendapatan implements Prisma.PendapatanCreateInput{
     jumlah: number;
     tanggal: string | Date;
     keterangan?: string;
+    tahun: number;
 }
