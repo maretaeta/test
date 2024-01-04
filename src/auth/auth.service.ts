@@ -16,46 +16,41 @@ export class AuthService {
     private readonly userService: UserService
   ) {}
 
- async login(loginDto: loginDto): Promise<any> {
-  const { username, password } = loginDto;
+  async login(loginDto: loginDto): Promise<any> {
+    const { username, password } = loginDto;
 
-  try {
-    if (!username || !password) {
-      throw new BadRequestException('Username and password are required.');
+    try {
+      if (!username || !password) {
+        throw new BadRequestException('Username and password are required.');
+      }
+
+      const user = await this.prismaService.users.findFirst({
+        where: { username },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      const validatePassword = await bcrypt.compare(password, user.password);
+
+      if (!validatePassword) {
+        throw new BadRequestException('Invalid Password');
+      }
+
+      const token = this.jwtService.sign(
+        { username: user.username },
+        { expiresIn: '5h' }
+      );
+
+      return {
+        user,
+        token,
+      };
+    } catch (error) {
+      throw new BadRequestException('Login failed: ' + error.message);
     }
-
-    const user = await this.prismaService.users.findFirst({
-      where: { username },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    console.log('Received password:', password);
-    console.log('Stored hashed password:', user.password);
-
-    const validatePassword = await bcrypt.compare(password, user.password);
-
-    if (!validatePassword) {
-      throw new BadRequestException('Invalid Password');
-    }
-
-    const token = this.jwtService.sign(
-      { username: user.username },
-      { expiresIn: '5h' }
-    );
-
-    console.log('Login successful for user:', username);
-
-    return {
-      user,
-      token,
-    };
-  } catch (error) {
-    throw new BadRequestException('Login failed: ' + error.message);
   }
-}
 
   async register(registerDto: registerDto): Promise<any> {
     const { nama, username, password } = registerDto;
@@ -72,6 +67,9 @@ export class AuthService {
         user,
       };
     } catch (error) {
+      if (error.code === 'P2002' && error.meta?.target?.includes('username')) {
+        throw new BadRequestException('Username is already taken');
+      }
       throw new BadRequestException('Registration failed: ' + error.message);
     }
   }

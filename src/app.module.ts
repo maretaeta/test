@@ -7,9 +7,10 @@ import { productSourcesModule } from './productSources/productSources.module';
 import { tokoModule } from './toko/toko.module';
 import { KaryawanModule } from './karyawan/karyawan.module';
 import { pendapatanModule } from './pendapatan/pendapatan.module';
+import { PengeluaranModule } from './pengeluaran/pengeluaran.modul';
 
 @Module({
-  imports: [ProductModule, PenjualanModule, AuthModule, UserModule, productSourcesModule, tokoModule, KaryawanModule, pendapatanModule],
+  imports: [ProductModule, PenjualanModule, AuthModule, UserModule, productSourcesModule, tokoModule, KaryawanModule, pendapatanModule, PengeluaranModule],
   controllers: [],
   providers: [],
 })

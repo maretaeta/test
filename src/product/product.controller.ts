@@ -42,6 +42,11 @@ export class productController{
             console.error(error);
             throw new Error('Failed to calculate total stock');
         }
-}
+    }
+
+    @Get('filter/:type')
+    async getProductsByType(@Param('type') type: string): Promise<product[]> {
+        return this.productService.getProductsByType(type);
+    }
 
 }

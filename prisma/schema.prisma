@@ -26,6 +26,8 @@ model Penjualan {
   userId             Int?
   penjualanItems     PenjualanItem[]
   products           Product[]
+  pendapatan         Pendapatan?
+  penjualanId        Int?            @unique
 }
 
 model PenjualanItem {
@@ -81,16 +83,31 @@ model Users {
   productSources ProductSources[]
   pendapatan     Pendapatan[]
   karyawan       Karyawan[]
+  Pengeluaran    Pengeluaran[]
 }
 
 model Pendapatan {
-  id_pendapatan Int      @id @default(autoincrement())
-  jumlah        Int
-  tanggal       DateTime
-  keterangan    String?
-  tahun         Int?
-  user          Users?   @relation(fields: [userId], references: [id_users])
-  userId        Int?
+  id_pendapatan          Int        @id @default(autoincrement())
+  tanggal                DateTime
+  totalPembelianPerDay   Int?
+  totalPenjualanPerDay   Int?
+  totalKeuntunganPerDay  Int?
+  totalPengeluaranPerDay Int?
+  pengeluaranPerDay      Int?
+  pendapatanBersih       Int?
+  user                   Users?     @relation(fields: [userId], references: [id_users])
+  userId                 Int?
+  penjualan              Penjualan? @relation(fields: [penjualanId], references: [id_penjualan])
+  penjualanId            Int?       @unique
+}
+
+model Pengeluaran {
+  id_pengeluaran Int      @id @default(autoincrement())
+  jumlah         Int
+  keterangan     String?
+  tanggal        DateTime
+  user           Users?   @relation(fields: [userId], references: [id_users])
+  userId         Int?
 }
 
 model Karyawan {

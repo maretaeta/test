@@ -1,37 +1,36 @@
-import { Controller, Post, Body, ParseIntPipe } from "@nestjs/common";
-import { PendapatanService } from "./pendapatan.service";
-import { pendapatan } from "./pendapatan.model";
+import { Controller, Get } from '@nestjs/common';
+import { PendapatanService } from './pendapatan.service';
 
-@Controller("api/v1/pendapatan")
+@Controller('api/v1/pendapatan')
 export class PendapatanController {
   constructor(private readonly pendapatanService: PendapatanService) {}
 
-  @Post("biaya-operasional")
-  async inputBiayaOperasional(
-    @Body("bensin") bensin: number,
-    @Body("service") service: number,
-    @Body("pembelian") pembelian: number,
-    @Body("biayalain") biayalain: number,
-    @Body("tanggal") tanggal: Date,
-    @Body("userId") userId: number,
-  ): Promise<pendapatan> {
-    return this.pendapatanService.inputBiayaOperasional(
-      bensin,
-      service,
-      pembelian,
-      biayalain,
-      tanggal,
-      userId,
-    );
+  @Get('/summary')
+  async getSummary(): Promise<any> {
+    const summary = await this.pendapatanService.getSummary();
+    return summary;
   }
 
-@Post("pendapatan-bulanan")
-async hitungPendapatanBulanan(
-  @Body("userId", ParseIntPipe) userId: number,
-  @Body("bulan", ParseIntPipe) bulan: number,
-  @Body("tahun", ParseIntPipe) tahun: number,
+  @Get('totalPembelianPerDay')
+  async getTotalPembelianPerDay() {
+    return this.pendapatanService.calculateTotalPembelianPerDay();
+  }
 
-): Promise<number> {
-  return this.pendapatanService.calculatePendapatanBulanan(userId, new Date(`${tahun}-${bulan}-01`));
+  @Get('totalPenjualanPerDay')
+  async getTotalPenjualanPerDay() {
+    return this.pendapatanService.calculateTotalPenjualanPerDay();
+  }
+
+  @Get('profit')
+  async getProfit(): Promise<{ profit: any[] }> {
+    const totalPembelianPerDay = await this.pendapatanService.calculateTotalPembelianPerDay();
+    const totalPenjualanPerDay = await this.pendapatanService.calculateTotalPenjualanPerDay();
+
+    return { profit: await this.pendapatanService.calculateProfit(totalPembelianPerDay, totalPenjualanPerDay) };
+  }
 }
-}
+
+  // @Get('penjualanWithPengeluaran')
+  // async getPenjualanWithPengeluaran() {
+  //   return this.pendapatanService.getPenjualanWithPengeluaran();
+  // }

@@ -160,25 +160,60 @@ async getPenjualan(id_penjualan: number): Promise<penjualan | null> {
   }
 
   // delete
-  async deletePenjualan(id_penjualan: number): Promise<void> {
-     try {
-    // Hapus terlebih dahulu data terkait di tabel anak (penjualanItems)
-    await this.prisma.penjualanItem.deleteMany({
+ async deletePenjualan(id_penjualan: number): Promise<void> {
+  try {
+    // Ambil data penjualan yang akan dihapus
+    const deletedPenjualan = await this.prisma.penjualan.findUnique({
       where: {
-        penjualanId:Number (id_penjualan),
+        id_penjualan: Number(id_penjualan),
+      },
+      include: {
+        penjualanItems: {
+          select: {
+            quantity: true,
+            productId: true,
+          },
+        },
       },
     });
 
-    await this.prisma.penjualan.delete({
+    if (!deletedPenjualan) {
+      throw new Error('Penjualan not found');
+    }
+
+    // Hapus terlebih dahulu data terkait di tabel anak (penjualanItems)
+    await this.prisma.penjualanItem.deleteMany({
       where: {
-        id_penjualan: Number (id_penjualan),
+        penjualanId: Number(id_penjualan),
       },
     });
+
+    // Hapus penjualan
+    await this.prisma.penjualan.delete({
+      where: {
+        id_penjualan: Number(id_penjualan),
+      },
+    });
+
+    // Kembalikan jumlah produk ke stok
+    for (const penjualanItem of deletedPenjualan.penjualanItems) {
+      await this.prisma.product.update({
+        where: {
+          id_product: penjualanItem.productId,
+        },
+        data: {
+          stok_product: {
+            increment: penjualanItem.quantity,
+          },
+        },
+      });
+    }
   } catch (error) {
     console.error('Gagal menghapus penjualan:', error);
     throw new Error('Terjadi kesalahan saat menghapus penjualan');
   }
 }
+
 
 
   // total penjualan
@@ -250,8 +285,102 @@ async getPenjualan(id_penjualan: number): Promise<penjualan | null> {
     return tokoData;
   }  
 
+  // filter
+   async getPenjualanByJenisProduk(jenisProduk: string): Promise<penjualan[]> {
+    try {
+      const penjualanByJenisProduk = await this.prisma.penjualan.findMany({
+        include: {
+          penjualanItems: {
+            where: {
+              product: {
+                jenis_product: jenisProduk,
+              },
+            },
+            include: {
+              product: {
+                select: {
+                  jenis_product: true,
+                  nama_product: true,
+                  ukuran_product: true,
+                  hargaJual: true,
+                },
+              },
+            },
+          },
+        },
+      });
 
+      return penjualanByJenisProduk;
+    } catch (error) {
+      console.error('Error getting penjualan by jenis produk:', error);
+      throw new Error('Error getting penjualan by jenis produk');
+    }
+  }
+
+  // search penjualan
+  async searchPenjualan(keyword: string): Promise<penjualan[]> {
+    try {
+      const searchQuery = `%${keyword}%`;
+
+      const searchResult = await this.prisma.penjualan.findMany({
+        where: {
+          OR: [
+            {
+              nama_toko: {
+                contains: searchQuery,
+              },
+            },
+            {
+              // createdAt: {
+              //   contains: searchQuery,
+              // },
+            },
+            {
+              penjualanItems: {
+                some: {
+                  product: {
+                    jenis_product: {
+                      contains: searchQuery,
+                    },
+                  },
+                },
+              },
+            },
+            {
+              penjualanItems: {
+                some: {
+                  product: {
+                    nama_product: {
+                      contains: searchQuery,
+                    },
+                  },
+                },
+              },
+            },
+            {
+              penjualanItems: {
+                some: {
+                  product: {
+                    ukuran_product: {
+                      contains: searchQuery,
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
+      });
+
+      return searchResult;
+    } catch (error) {
+      console.error(error);
+      throw new Error("An error occurred while searching for penjualan.");
+    }
+  }
 }
+
+
 
 interface CreatePenjualanResponse {
   penjualan: penjualan;

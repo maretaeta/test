@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Body, Controller, Get, Post, Put, Delete, Param } from "@nestjs/common";
+import { Body, Controller, Get, Post, Put, Delete, Param, Query } from "@nestjs/common";
 import { penjualanService } from "./penjualan.service";
 import { penjualan } from "./penjualan.model";
 
@@ -74,4 +74,24 @@ export class penjualanController {
         return topToko;
     }
 
+     @Get('byJenisProduk/:jenisProduk')
+        async getPenjualanByJenisProduk(@Param('jenisProduk') jenisProduk: string) {
+            try {
+            const penjualanByJenisProduk = await this.penjualanService.getPenjualanByJenisProduk(jenisProduk);
+            return { success: true, data: penjualanByJenisProduk };
+            } catch (error) {
+            return { success: false, message: error.message };
+            }
+    }
+
+     @Get('search')
+        async searchPenjualan(@Query('keyword') keyword: string): Promise<penjualan[]> {
+            try {
+            const searchResult = await this.penjualanService.searchPenjualan(keyword);
+            return searchResult;
+            } catch (error) {
+            console.error(error);
+            throw new Error("An error occurred while searching for penjualan.");
+            }
+        }
 }
