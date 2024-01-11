@@ -49,4 +49,19 @@ export class productController{
         return this.productService.getProductsByType(type);
     }
 
+    @Get('/search')
+    async searchProducts(@Query('query') query: string): Promise<any> {
+        try {
+            if (!query) {
+                throw new Error('Search query is required');
+            }
+
+            const searchResults = await this.productService.searchProducts(query);
+            return { success: true, data: searchResults };
+        } catch (error) {
+            console.error('Error searching products:', error);
+            return { success: false, message: 'Failed to search products' };
+        }
+    }
+
 }

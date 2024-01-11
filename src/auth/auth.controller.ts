@@ -1,9 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Body, Controller, Post, Req, Res } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { Request, Response } from "express";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { loginDto } from "./dto/login-user.dto";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { registerDto } from "./dto/register-user.dto";
 
 @Controller('api/v1/auth')

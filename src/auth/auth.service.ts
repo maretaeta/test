@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "src/prisma.service";
 import { loginDto } from "./dto/login-user.dto";
@@ -35,7 +35,7 @@ export class AuthService {
       const validatePassword = await bcrypt.compare(password, user.password);
 
       if (!validatePassword) {
-        throw new BadRequestException('Invalid Password');
+        throw new UnauthorizedException('Invalid Password');
       }
 
       const token = this.jwtService.sign(
@@ -54,9 +54,14 @@ export class AuthService {
 
   async register(registerDto: registerDto): Promise<any> {
     const { nama, username, password } = registerDto;
-    const hashedPassword = await bcrypt.hash(password, 12);
 
     try {
+      if (!nama || !username || !password) {
+        throw new BadRequestException('Name, username, and password are required.');
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 12);
+
       const user = await this.userService.createUser({
         nama,
         username,

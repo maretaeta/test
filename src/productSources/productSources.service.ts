@@ -37,7 +37,6 @@ export class ProductSourcesService {
     }
 
 
-	// Create pembelian
    // Create pembelian
 async createProductSources(data: ProductSources): Promise<ProductSources> {
     let existingProduct = await this.prisma.product.findFirst({
@@ -59,7 +58,8 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
         });
     } else {
         const totalHarga = this.calculateTotalHarga(data.jumlah_productSources, data.pembelian_productSources, data.ongkosProses_productSources);
-        const harga = totalHarga / data.jumlah_productSources / 3;
+        // const harga = totalHarga / data.jumlah_productSources / 3;
+         const harga = totalHarga / data.jumlah_productSources;
 
         const newProduct = await this.prisma.product.create({
             data: {
@@ -97,7 +97,8 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
     }
 
     const totalHarga = this.calculateTotalHarga(data.jumlah_productSources, data.pembelian_productSources, data.ongkosProses_productSources);
-    const harga = totalHarga / data.jumlah_productSources / 3;
+    // const harga = totalHarga / data.jumlah_productSources / 3;
+     const harga = totalHarga / data.jumlah_productSources;
 
     const prismaData: Prisma.ProductSourcesCreateInput = {
         nama_toko: data.nama_toko,
@@ -136,7 +137,8 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
         }
 
         const totalHarga = this.calculateTotalHarga(data.jumlah_productSources, data.pembelian_productSources, data.ongkosProses_productSources);
-        const hargaPerLembar = totalHarga / data.jumlah_productSources / 3;
+        // const hargaPerLembar = totalHarga / data.jumlah_productSources / 3;
+        const hargaPerLembar = totalHarga / data.jumlah_productSources ;
 
         let existingProduct = await this.prisma.product.findFirst({
             where: {
@@ -268,8 +270,8 @@ async deleteProductSources(id_productSources: number): Promise<ProductSources> {
             _sum: { jumlah_productSources: true },
             where: {
                 AND: [
-                    { createdAt: { gte: new Date(2023, monthNumber - 1, 1) } } as any,
-                    { createdAt: { lt: new Date(2023, monthNumber, 1) } } as any,
+                    { createdAt: { gte: new Date(2024, monthNumber - 1, 1) } } as any,
+                    { createdAt: { lt: new Date(2024, monthNumber, 1) } } as any,
                 ],
             },
         });
@@ -371,7 +373,72 @@ async deleteProductSources(id_productSources: number): Promise<ProductSources> {
             throw new Error('Error fetching products in date range');
         }
     }
+
+    // seacrh keyword
+    async searchProductSources(query: string): Promise<ProductSources[]> {
+    const searchData = await this.prisma.productSources.findMany({
+        where: {
+            OR: [
+                { nama_toko: { contains: query, mode: "insensitive" } },
+                { alamat_toko: { contains: query, mode: "insensitive" } },
+                { jenis_productSources: { contains: query, mode: "insensitive" } },
+                { nama_productSources: { contains: query, mode: "insensitive" } },
+                { ukuran_productSources: { contains: query, mode: "insensitive" } },
+                { jumlah_productSources: { equals: parseInt(query, 10) || 0 } },
+                { pembelian_productSources: { equals: parseInt(query, 10) || 0 } },
+                { ongkosProses_productSources: { equals: parseInt(query, 10) || 0 } },
+                { totalPembelian_productSources: { equals: parseInt(query, 10) || 0 } },
+                { hargaPerLembar: { equals: parseInt(query, 10) || 0 } },
+            ],
+        },
+        include: {
+            product: {
+                select: {
+                    id_product: true,
+                },
+            },
+        },
+    });
+
+        return searchData;
+    }
+
+    // Calculate monthly profit for the current year and month
+async calculateMonthlyProfit(year: number): Promise<{ month: string; profit: number }[]> {
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1;
+
+    const monthlyProfits = [];
+    for (let month = 1; month <= currentMonth; month++) {
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 1);
+
+        const totalPurchases = await this.prisma.productSources.aggregate({
+            _sum: { totalPembelian_productSources: true },
+            where: {
+                createdAt: {
+                    gte: startDate,
+                    lt: endDate,
+                },
+            },
+        });
+
+        const totalExpenses = await this.prisma.productSources.aggregate({
+            _sum: { ongkosProses_productSources: true },
+            where: {
+                createdAt: {
+                    gte: startDate,
+                    lt: endDate,
+                },
+            },
+        });
+
+        const profit = (totalPurchases._sum.totalPembelian_productSources || 0) - (totalExpenses._sum.ongkosProses_productSources || 0);
+
+        monthlyProfits.push({ month: month.toString(), profit });
+    }
+
+    return monthlyProfits;
 }
 
-
-
+}

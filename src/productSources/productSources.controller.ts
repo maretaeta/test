@@ -90,4 +90,26 @@ export class productSourcesController {
             throw new HttpException('Error fetching products in date range', HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @Get('search')
+    async searchProductSources(@Query('query') query: string): Promise<ProductSources[]> {
+      return this.productSourcesService.searchProductSources(query);
+    }
+
+
+     @Get('monthly-profit')
+  async getMonthlyProfit(): Promise<{ month: string; profit: number }[]> {
+    try {
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+
+      // Calculate monthly profit for the current year and month
+      const monthlyProfits = await this.productSourcesService.calculateMonthlyProfit(currentYear);
+      return monthlyProfits;
+    } catch (error) {
+      // Handle error appropriately, e.g., return a proper HTTP response
+      console.error(error);
+      throw new Error('Failed to retrieve monthly profits.');
+    }
   }
+}

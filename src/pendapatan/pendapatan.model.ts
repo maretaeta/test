@@ -8,5 +8,7 @@ export class pendapatan implements Prisma.PendapatanCreateInput{
     totalKeuntunganPerDay?: number;
     totalPengeluaranPerDay?: number;
     pengeluaranPerDay?: number;
-    pendapatanBersih?: number;
+    pendapatanBersih?: number;    
+    totalPendapatanPerMonth?: number;
+    totalPendapatanPerYears?: number;
 }

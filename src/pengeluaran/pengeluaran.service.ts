@@ -1,51 +1,74 @@
-// src/pengeluaran/pengeluaran.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { pengeluaran } from "./pengeluaran.model"
 
 @Injectable()
 export class PengeluaranService {
   constructor(private readonly prisma: PrismaService) {}
 
-   async createPengeluaran(data: {
-    jumlah: number;
-    keterangan: string;
-    tanggal: Date;
-    idPendapatan: number;
-  }): Promise<pengeluaran> {
+  async createPengeluaran(idPendapatan: number, expenses: any[]): Promise<any[]> {
     try {
-      const pendapatan = await this.prisma.pendapatan.findUnique({
-        where: { id_pendapatan: Number(data.idPendapatan) },
+      // Check if the corresponding Pendapatan exists
+      const existingPendapatan = await this.prisma.pendapatan.findUnique({
+        where: {
+          id_pendapatan: idPendapatan,
+        },
       });
 
-      if (!pendapatan) {
-        throw new NotFoundException(`Pendapatan with id ${data.idPendapatan} not found`);
+      if (!existingPendapatan) {
+        throw new NotFoundException(`Pendapatan with id ${idPendapatan} not found`);
       }
 
-      const pengeluaranData = {
-        jumlah: data.jumlah,
-        keterangan: data.keterangan,
-        tanggal: data.tanggal,
-        pendapatanId: data.idPendapatan,
-      };
+      const createdExpenses = await Promise.all(
+        expenses.map(async (expense) => {
+          const convertedJumlah = Number(expense.jumlah);
 
-      const createdPengeluaran = await this.prisma.pengeluaran.create({ data: pengeluaranData });
+          const createdExpense = await this.prisma.pengeluaran.create({
+            data: {
+              jumlah: convertedJumlah,
+              keterangan: expense.keterangan,
+              tanggal: expense.tanggal,
+              pendapatan: {
+                connect: {
+                  id_pendapatan: Number(idPendapatan),
+                },
+              },
+            },
+          });
 
-      return createdPengeluaran;
+          // Update totalPengeluaranPerDay and pengeluaranPerDay in Pendapatan
+          await this.prisma.pendapatan.update({
+            where: {
+              id_pendapatan: Number(idPendapatan),
+            },
+            data: {
+              totalPengeluaranPerDay: {
+                increment: createdExpense.jumlah,
+              },
+              pengeluaranPerDay: {
+                increment: 1,
+              },
+            },
+          });
+
+          return createdExpense;
+        })
+      );
+
+      return createdExpenses;
     } catch (error) {
-      console.error('Error creating pengeluaran:', error);
-      throw error;
+      console.error('Error creating expenses:', error);
+      throw error; // Rethrow the error for the calling code to handle
     }
   }
 
 
-  async editPengeluaran(id: number, data: { jumlah?: number; keterangan?: string }): Promise<pengeluaran> {
-    return this.prisma.pengeluaran.update({
-      where: { id_pengeluaran: id },
-      data,
-    });
-  }
+
+  // async editPengeluaran(id: number, data: { jumlah?: number; keterangan?: string }): Promise<pengeluaran> {
+  //   return this.prisma.pengeluaran.update({
+  //     where: { id_pengeluaran: id },
+  //     data,
+  //   });
+  // }
 
 
 async getTotalPengeluaranPerDay(): Promise<any> {
@@ -55,9 +78,6 @@ async getTotalPengeluaranPerDay(): Promise<any> {
       _sum: {
         jumlah: true,
       },
-      // where: {
-      //   tanggal: new Date(date),
-      // },
     });
 
     return result || []; 
@@ -68,33 +88,20 @@ async getTotalPengeluaranPerDay(): Promise<any> {
 }
 
 
+async deletePengeluaran(id: number): Promise<void> {
+    try {
+      const deletedPengeluaran = await this.prisma.pengeluaran.delete({
+        where: { id_pengeluaran:Number (id) },
+      });
 
-  //  async createPengeluaranFromPendapatan(idPendapatan: number): Promise<pengeluaran> {
-  //   try {
-  //     const pendapatan: pendapatan | null = await this.prisma.pendapatan.findUnique({
-  //       where: { id_pendapatan: Number (idPendapatan) },
-  //     });
+      if (!deletedPengeluaran) {
+        throw new NotFoundException(`Pengeluaran with id ${id} not found`);
+      }
 
-  //     if (!pendapatan) {
-  //       throw new NotFoundException(`Pendapatan with id ${idPendapatan} not found`);
-  //     }
+    } catch (error) {
+      console.error('Error deleting pengeluaran:', error);
+      throw error;
+    }
+  }
 
-  //     const pengeluaranData = {
-  //       jumlah: pendapatan.jumlah,
-  //       keterangan: pendapatan.keterangan,
-  //       tanggal: pendapatan.tanggal,
-  //     };
-
-  //     const createdPengeluaran = await this.prisma.pengeluaran.create({ data: pengeluaranData });
-
-  //     await this.prisma.pendapatan.delete({
-  //       where: { id_pendapatan:Number (idPendapatan) },
-  //     });
-
-  //     return createdPengeluaran;
-  //   } catch (error) {
-  //     console.error('Error creating pengeluaran from pendapatan:', error);
-  //     throw error;
-  //   }
-  // }
 }

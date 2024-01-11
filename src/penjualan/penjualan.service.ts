@@ -317,69 +317,73 @@ async getPenjualan(id_penjualan: number): Promise<penjualan | null> {
     }
   }
 
-  // search penjualan
-  async searchPenjualan(keyword: string): Promise<penjualan[]> {
+    async searchPenjualan(query: string): Promise<penjualan[]> {
     try {
-      const searchQuery = `%${keyword}%`;
-
-      const searchResult = await this.prisma.penjualan.findMany({
+      const penjualanSearchResult = await this.prisma.penjualan.findMany({
         where: {
           OR: [
             {
               nama_toko: {
-                contains: searchQuery,
-              },
-            },
-            {
-              // createdAt: {
-              //   contains: searchQuery,
-              // },
-            },
-            {
-              penjualanItems: {
-                some: {
-                  product: {
-                    jenis_product: {
-                      contains: searchQuery,
-                    },
-                  },
-                },
+                contains: query,
+                mode: 'insensitive', // case-insensitive search
               },
             },
             {
               penjualanItems: {
                 some: {
                   product: {
-                    nama_product: {
-                      contains: searchQuery,
-                    },
-                  },
-                },
-              },
-            },
-            {
-              penjualanItems: {
-                some: {
-                  product: {
-                    ukuran_product: {
-                      contains: searchQuery,
-                    },
+                    OR: [
+                      {
+                        jenis_product: {
+                          contains: query,
+                          mode: 'insensitive',
+                        },
+                      },
+                      {
+                        penjualanItems: {
+                          some: {
+                            OR: [
+                              {
+                                quantity: {
+                                  equals: parseInt(query) || undefined,
+                                },
+                              },
+                            ],
+                          },
+                        },
+                      },
+                    ],
                   },
                 },
               },
             },
           ],
         },
+        include: {
+          penjualanItems: {
+            include: {
+              product: {
+                select: {
+                  jenis_product: true,
+                  nama_product: true,
+                  ukuran_product: true,
+                  hargaJual: true,
+                },
+              },
+            },
+          },
+        },
       });
 
-      return searchResult;
+      return penjualanSearchResult;
     } catch (error) {
-      console.error(error);
-      throw new Error("An error occurred while searching for penjualan.");
+      console.error('Error searching penjualan:', error);
+      throw new Error('Error searching penjualan');
     }
   }
-}
 
+  
+  }
 
 
 interface CreatePenjualanResponse {

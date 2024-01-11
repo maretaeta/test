@@ -1,43 +1,37 @@
-import { Controller, Post, Body, Param, Get, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete,  NotFoundException, Put } from '@nestjs/common';
 import { PengeluaranService } from './pengeluaran.service';
+import { pengeluaran } from './pengeluaran.model';
 
-@Controller('api/v1/pengeluaran')
+@Controller('pengeluaran')
 export class PengeluaranController {
   constructor(private readonly pengeluaranService: PengeluaranService) {}
 
-  @Post('create')
-  async createPengeluaran(@Body() data: { jumlah: number; keterangan: string; tanggal: Date; idPendapatan: number }) {
-    try {
-      const createdPengeluaran = await this.pengeluaranService.createPengeluaran(data);
-      return createdPengeluaran;
-    } catch (error) {
-      console.error('Error creating pengeluaran:', error);
-      throw error;
-    }
+  @Post()
+  async createPengeluaran(@Body() data: pengeluaran): Promise<pengeluaran> {
+    return this.pengeluaranService.createPengeluaran(data);
   }
 
-  // @Post('create-from-pendapatan/:idPendapatan')
-  // async createPengeluaranFromPendapatan(@Param('idPendapatan') idPendapatan: number) {
-  //   try {
-  //     const createdPengeluaran = await this.pengeluaranService.createPengeluaranFromPendapatan(idPendapatan);
-  //     return createdPengeluaran;
-  //   } catch (error) {
-  //     console.error('Error creating pengeluaran from pendapatan:', error);
-  //     throw error;
-  //   }
-  // }
+  @Get()
+  async getAllPengeluaran(): Promise<pengeluaran[]> {
+    return this.pengeluaranService.searchPengeluaran(''); // Fetch all items
+  }
 
-  @Get('total-per-day')
-  async getTotalPengeluaranPerDay(@Param('date') date: string) {
-    try {
-      const totalPengeluaran = await this.pengeluaranService.getTotalPengeluaranPerDay();
-      if (!totalPengeluaran || totalPengeluaran.length === 0) {
-        throw new NotFoundException(`No expenditures found for date ${date}`);
-      }
-      return totalPengeluaran;
-    } catch (error) {
-      console.error('Error getting total pengeluaran per day:', error);
-      throw error;
+  @Get('detail/:id_pengeluarab')
+  async getPengeluaranById(@Param('id_pengeluaran') id_pengeluaran: number): Promise<pengeluaran> {
+    const pengeluaran = await this.pengeluaranService.searchPengeluaran(id_pengeluaran.toString());
+    if (!pengeluaran.length) {
+      throw new NotFoundException(`Pengeluaran with ID ${id_pengeluaran} not found`);
     }
+    return pengeluaran[0];
+  }
+
+  @Put('edit/:id')
+  async updatePengeluaran(@Param('id') id_pengeluaran: number, @Body() data: pengeluaran): Promise<pengeluaran> {
+    return this.pengeluaranService.updatePengeluaran(id_pengeluaran, data);
+  }
+
+  @Delete('delete/:id')
+  async deletePengeluaran(@Param('id') id_pengeluaran: number): Promise<void> {
+    await this.pengeluaranService.deletePengeluaran(id_pengeluaran);
   }
 }

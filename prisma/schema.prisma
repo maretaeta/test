@@ -87,26 +87,28 @@ model Users {
 }
 
 model Pendapatan {
-  id_pendapatan          Int        @id @default(autoincrement())
-  tanggal                DateTime
-  totalPembelianPerDay   Int?
-  totalPenjualanPerDay   Int?
-  totalKeuntunganPerDay  Int?
-  totalPengeluaranPerDay Int?
-  pengeluaranPerDay      Int?
-  pendapatanBersih       Int?
-  user                   Users?     @relation(fields: [userId], references: [id_users])
-  userId                 Int?
-  penjualan              Penjualan? @relation(fields: [penjualanId], references: [id_penjualan])
-  penjualanId            Int?       @unique
+  id_pendapatan           Int           @id @default(autoincrement())
+  tanggal                 DateTime
+  totalPembelianPerDay    Int?
+  totalPenjualanPerDay    Int?
+  totalKeuntunganPerDay   Int?
+  totalPengeluaranPerDay  Int?
+  pengeluaranPerDay       Int?
+  pendapatanBersih        Int?
+  totalPendapatanPerMonth Int?
+  totalPendapatanPerYears Int?
+  user                    Users?        @relation(fields: [userId], references: [id_users])
+  userId                  Int?
+  penjualan               Penjualan?    @relation(fields: [penjualanId], references: [id_penjualan])
+  penjualanId             Int?          @unique
 }
 
 model Pengeluaran {
-  id_pengeluaran Int      @id @default(autoincrement())
+  id_pengeluaran Int        @id @default(autoincrement())
   jumlah         Int
   keterangan     String?
   tanggal        DateTime
-  user           Users?   @relation(fields: [userId], references: [id_users])
+  user           Users?     @relation(fields: [userId], references: [id_users])
   userId         Int?
 }
 

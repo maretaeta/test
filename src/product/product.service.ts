@@ -34,7 +34,6 @@
         }
 
         // delete barang
-        // delete barang
 async deleteProduct(id_product: number): Promise<product> {
     try {
         // Check for PenjualanItem records referencing the product
@@ -85,8 +84,8 @@ async deleteProduct(id_product: number): Promise<product> {
             _sum: { stok_product: true },
             where: {
                 AND: [
-                    { createdAt: { gte: new Date(2023, monthNumber - 1, 1) } } as any,
-                    { createdAt: { lt: new Date(2023, monthNumber, 1) } } as any,
+                    { createdAt: { gte: new Date(2024, monthNumber - 1, 1) } } as any,
+                    { createdAt: { lt: new Date(2024, monthNumber, 1) } } as any,
                 ],
             },
         });
@@ -111,4 +110,37 @@ async deleteProduct(id_product: number): Promise<product> {
             throw new Error('Failed to fetch products by type');
         }
     }
+
+// search
+async searchProducts(query: string): Promise<product[]> {
+    try {
+        const products = await this.prisma.product.findMany({
+            where: {
+                OR: [
+                    { nama_product: { contains: query, mode: 'insensitive' } },
+                    { jenis_product: { contains: query, mode: 'insensitive' } },
+                    { ukuran_product: { contains: query, mode: 'insensitive' } },
+                    { stok_product: { equals: parseInt(query, 10) || 0 } }, 
+                    { keuntungan: { equals: parseInt(query, 10) || 0 } }, 
+                    {
+                        hargaJual: {
+                            equals: parseInt(query, 10) || 0,
+                        },
+                    }, 
+                ],
+            },
+        });
+
+        // Calculate and set hargaJual based on harga_product and keuntungan
+        const productsWithSellingPrice = products.map((product) => ({
+            ...product,
+            hargaJual: product.harga_product + product.keuntungan,
+        }));
+
+        return productsWithSellingPrice;
+    } catch (error) {
+        console.error('Error searching products:', error);
+        throw new Error('Failed to search products');
+    }
+}    
 }
