@@ -1,37 +1,53 @@
-import { Controller, Get, Post, Body, Param, Delete,  NotFoundException, Put } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, NotFoundException} from '@nestjs/common';
 import { PengeluaranService } from './pengeluaran.service';
 import { pengeluaran } from './pengeluaran.model';
 
-@Controller('pengeluaran')
+@Controller('api/v1/pengeluaran')
 export class PengeluaranController {
-  constructor(private readonly pengeluaranService: PengeluaranService) {}
+  constructor(private pengeluaranService: PengeluaranService) {}
 
-  @Post()
+  @Get()
+  async getAllPengeluaran(): Promise<pengeluaran[]> {
+    return this.pengeluaranService.getAllPengeluaran();
+  }
+
+  @Post('create')
   async createPengeluaran(@Body() data: pengeluaran): Promise<pengeluaran> {
     return this.pengeluaranService.createPengeluaran(data);
   }
 
-  @Get()
-  async getAllPengeluaran(): Promise<pengeluaran[]> {
-    return this.pengeluaranService.searchPengeluaran(''); // Fetch all items
-  }
-
-  @Get('detail/:id_pengeluarab')
-  async getPengeluaranById(@Param('id_pengeluaran') id_pengeluaran: number): Promise<pengeluaran> {
-    const pengeluaran = await this.pengeluaranService.searchPengeluaran(id_pengeluaran.toString());
-    if (!pengeluaran.length) {
-      throw new NotFoundException(`Pengeluaran with ID ${id_pengeluaran} not found`);
-    }
-    return pengeluaran[0];
-  }
-
   @Put('edit/:id')
-  async updatePengeluaran(@Param('id') id_pengeluaran: number, @Body() data: pengeluaran): Promise<pengeluaran> {
-    return this.pengeluaranService.updatePengeluaran(id_pengeluaran, data);
+  async updatePengeluaran(@Param('id') id: number, @Body() data: pengeluaran): Promise<pengeluaran> {
+    return this.pengeluaranService.updatePengeluaran(id, data);
   }
 
-  @Delete('delete/:id')
-  async deletePengeluaran(@Param('id') id_pengeluaran: number): Promise<void> {
-    await this.pengeluaranService.deletePengeluaran(id_pengeluaran);
+   @Delete('delete/:id')
+  async deletePengeluaran(@Param('id') id: number): Promise<{ message: string }> {
+    try {
+      const resultMessage = await this.pengeluaranService.deletePengeluaran(id);
+      return { message: resultMessage };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+      
+        throw new NotFoundException(error.message);
+      }
+      // Handle other exceptions with a generic HTTP status code
+      throw new Error(error.message);
+    }
+  }
+
+  @Get('search')
+  async searchPengeluaran(@Query('keyword') keyword: string): Promise<any[]> {
+    return this.pengeluaranService.searchPengeluaran(keyword);
+  }
+
+
+   @Get('accumulated-expenses-per-day')
+  async getAccumulatedExpensesPerDay(): Promise<{ date: Date; total: number }[]> {
+    try {
+      return this.pengeluaranService.getAccumulatedExpensesPerDay();
+    } catch (error) {
+      throw new Error(`Failed to get accumulated expenses per day: ${error.message}`);
+    }
   }
 }

@@ -1,107 +1,120 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
+import { pengeluaran } from './pengeluaran.model';
 
 @Injectable()
 export class PengeluaranService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {}
 
-  async createPengeluaran(idPendapatan: number, expenses: any[]): Promise<any[]> {
+  async getAllPengeluaran(): Promise<pengeluaran[]> {
+    return this.prisma.pengeluaran.findMany();
+  }
+
+  async createPengeluaran(data: pengeluaran): Promise<pengeluaran> {
+  try {
+    return this.prisma.pengeluaran.create({ 
+      data: {
+        tanggal: data.tanggal,
+        jumlah: data.jumlah,
+        keterangan: data.keterangan
+
+    }
+    });
+  } catch (error) {
+    throw new Error(`Failed to create Pengeluaran: ${error.message}`);
+  }
+}
+
+
+  async updatePengeluaran(id_pengeluaran: number, data: pengeluaran): Promise<pengeluaran> {
     try {
-      // Check if the corresponding Pendapatan exists
-      const existingPendapatan = await this.prisma.pendapatan.findUnique({
-        where: {
-          id_pendapatan: idPendapatan,
-        },
+      const existingPengeluaran = await this.prisma.pengeluaran.findUnique({
+        where: { id_pengeluaran: Number(id_pengeluaran) },
       });
 
-      if (!existingPendapatan) {
-        throw new NotFoundException(`Pendapatan with id ${idPendapatan} not found`);
+      if (!existingPengeluaran) {
+        throw new NotFoundException(`Pengeluaran with ID ${id_pengeluaran} not found`);
       }
 
-      const createdExpenses = await Promise.all(
-        expenses.map(async (expense) => {
-          const convertedJumlah = Number(expense.jumlah);
-
-          const createdExpense = await this.prisma.pengeluaran.create({
-            data: {
-              jumlah: convertedJumlah,
-              keterangan: expense.keterangan,
-              tanggal: expense.tanggal,
-              pendapatan: {
-                connect: {
-                  id_pendapatan: Number(idPendapatan),
-                },
-              },
-            },
-          });
-
-          // Update totalPengeluaranPerDay and pengeluaranPerDay in Pendapatan
-          await this.prisma.pendapatan.update({
-            where: {
-              id_pendapatan: Number(idPendapatan),
-            },
-            data: {
-              totalPengeluaranPerDay: {
-                increment: createdExpense.jumlah,
-              },
-              pengeluaranPerDay: {
-                increment: 1,
-              },
-            },
-          });
-
-          return createdExpense;
-        })
-      );
-
-      return createdExpenses;
+      return this.prisma.pengeluaran.update({
+        where:{
+          id_pengeluaran: Number(id_pengeluaran)
+        },
+        data:{
+          jumlah: data.jumlah,
+          keterangan: data.keterangan,
+          tanggal: data.tanggal,
+        }
+      });
     } catch (error) {
-      console.error('Error creating expenses:', error);
-      throw error; // Rethrow the error for the calling code to handle
+      throw new Error(`Failed to update Pengeluaran: ${error.message}`);
+    }
+  }
+
+  async deletePengeluaran(id_pengeluaran: number): Promise<string> {
+    try {
+      const existingPengeluaran = await this.prisma.pengeluaran.findUnique({
+        where: { id_pengeluaran: Number(id_pengeluaran) },
+      });
+
+      if (!existingPengeluaran) {
+        throw new NotFoundException(`Pengeluaran with ID ${id_pengeluaran} not found`);
+      }
+
+      await this.prisma.pengeluaran.delete({
+        where: { id_pengeluaran: Number(id_pengeluaran) }
+      });
+
+      return `Pengeluaran with ID ${id_pengeluaran} has been deleted`;
+    } catch (error) {
+      throw new Error(`Failed to delete Pengeluaran: ${error.message}`);
     }
   }
 
 
+  async searchPengeluaran(keyword: string): Promise<pengeluaran[]> {
+    try {
+      const results = await this.prisma.pengeluaran.findMany({
+        where: {
+          OR: [
+            { keterangan: { contains: keyword, mode: "insensitive" } },
+            { jumlah: { equals: parseInt(keyword, 10) || 0 } },
+            // { tanggal: { equals: new Date(keyword, 10) } },
+          ],
+        },
+      });
 
-  // async editPengeluaran(id: number, data: { jumlah?: number; keterangan?: string }): Promise<pengeluaran> {
-  //   return this.prisma.pengeluaran.update({
-  //     where: { id_pengeluaran: id },
-  //     data,
-  //   });
-  // }
+      if (results.length === 0) {
+        throw new NotFoundException(`No Pengeluaran found with keyword: ${keyword}`);
+      }
 
+      return results;
+    } catch (error) {
+      throw new BadRequestException(`Invalid search parameter: ${keyword}`);
+    }
+  }
 
-async getTotalPengeluaranPerDay(): Promise<any> {
+   async getAccumulatedExpensesPerDay(): Promise<{ date: Date; total: number; details: pengeluaran[] }[]> {
   try {
-    const result = await this.prisma.pengeluaran.groupBy({
+    const results = await this.prisma.pengeluaran.groupBy({
       by: ['tanggal'],
       _sum: {
         jumlah: true,
       },
     });
 
-    return result || []; 
+    return Promise.all(results.map(async (result) => ({
+      date: result.tanggal,
+      total: result._sum.jumlah,
+      details: await this.prisma.pengeluaran.findMany({
+        where: {
+          tanggal: result.tanggal,
+        },
+      }),
+    })));
   } catch (error) {
-    console.error('Error getting total pengeluaran per day:', error);
-    throw error;
+    throw new Error(`Failed to get accumulated expenses per day: ${error.message}`);
   }
 }
-
-
-async deletePengeluaran(id: number): Promise<void> {
-    try {
-      const deletedPengeluaran = await this.prisma.pengeluaran.delete({
-        where: { id_pengeluaran:Number (id) },
-      });
-
-      if (!deletedPengeluaran) {
-        throw new NotFoundException(`Pengeluaran with id ${id} not found`);
-      }
-
-    } catch (error) {
-      console.error('Error deleting pengeluaran:', error);
-      throw error;
-    }
-  }
-
+  
 }
