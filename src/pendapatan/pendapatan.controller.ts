@@ -7,6 +7,7 @@ export class PendapatanController {
   constructor(private readonly pendapatanService: PendapatanService) {}
 
 
+  // pendapatan perhari
    @Get('/summary')
   async getSummary(): Promise<any[]> {
     try {
@@ -17,6 +18,7 @@ export class PendapatanController {
     }
   }
 
+  // pendapatan perbulan
    @Get('/total-per-month')
   async calculateTotalPendapatanPerMonth(): Promise<any[]> {
     try {
@@ -28,13 +30,13 @@ export class PendapatanController {
     }
   }
 
+  // pendapatan per tahun
    @Get('tahun')
   async getAccumulatedNetIncome(): Promise<{ year: number; total: number }[]> {
     try {
       const accumulatedNetIncome = await this.pendapatanService.calculateAccumulatedNetIncome();
       return accumulatedNetIncome;
     } catch (error) {
-      // Handle errors accordingly
       console.error('Error getting accumulated net income:', error);
       throw error;
     }

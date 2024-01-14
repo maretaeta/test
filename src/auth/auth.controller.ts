@@ -9,6 +9,7 @@ import { registerDto } from "./dto/register-user.dto";
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // login
   @Post('login')
   async login(
     @Req() request: Request,
@@ -27,6 +28,7 @@ export class AuthController {
     }
   }
 
+  // register
   @Post('register')
   async register(
     @Req() request: Request,

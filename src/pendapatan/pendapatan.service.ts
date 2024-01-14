@@ -1,5 +1,3 @@
-// pendapatan.service.ts
-
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -15,6 +13,7 @@ export class PendapatanService {
     private pengeluaranService: PengeluaranService) {}
 
 
+// pendapatan perhari
  async calculateTotalPengeluaranPerDay(): Promise<any> {
     try {
       const results = await this.prisma.pengeluaran.groupBy({
@@ -194,13 +193,11 @@ calculateNetIncome(totalSales: number, totalPurchases: number, totalExpenses: nu
 
 
 
-  // Pendapatan Per Bulan
 // Pendapatan Per Bulan
 async calculateTotalPendapatanPerMonth(): Promise<any[]> {
   try {
     const totalSummary = await this.getSummary();
 
-    // Objek yang berisi nama-nama bulan
     const monthNames = [
       'Januari',
       'Februari',
@@ -237,7 +234,7 @@ async calculateTotalPendapatanPerMonth(): Promise<any[]> {
     );
 
     const result: { month: string; year: number; totalPendapatan: string }[] = Object.values(monthlySummary).map((entry) => ({
-      month: monthNames[entry.month - 1], // Ambil nama bulan dari array monthNames
+      month: monthNames[entry.month - 1],
       year: entry.year,
       totalPendapatan: entry.totalPendapatan.toFixed(),
     }));

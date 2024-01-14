@@ -16,6 +16,7 @@ export class AuthService {
     private readonly userService: UserService
   ) {}
 
+  // login
   async login(loginDto: loginDto): Promise<any> {
     const { username, password } = loginDto;
 
@@ -35,7 +36,6 @@ export class AuthService {
       const validatePassword = await bcrypt.compare(password, user.password);
 
       if (!validatePassword) {
-        // Throw a custom UnauthorizedException for invalid password
         throw new UnauthorizedException('Invalid username or password');
       }
 
@@ -53,6 +53,7 @@ export class AuthService {
     }
   }
 
+  // register
   async register(registerDto: registerDto): Promise<any> {
     const { nama, username, password } = registerDto;
 
