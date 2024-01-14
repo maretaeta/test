@@ -116,82 +116,114 @@ calculateNetIncome(totalSales: number, totalPurchases: number, totalExpenses: nu
   }
 
   async getSummary(): Promise<any[]> {
-    try {
-      const totalPembelianPerDay = await this.calculateTotalPembelianPerDay();
-      const totalPenjualanPerDay = await this.calculateTotalPenjualanPerDay();
-      const totalPengeluaranPerDay = await this.calculateTotalPengeluaranPerDay();
+  try {
+    const totalPembelianPerDay = await this.calculateTotalPembelianPerDay();
+    const totalPenjualanPerDay = await this.calculateTotalPenjualanPerDay();
+    const totalPengeluaranPerDay = await this.calculateTotalPengeluaranPerDay();
 
-      const dates = [
-        ...new Set([
-          ...totalPembelianPerDay.map((entry) => entry.date.toISOString().split('T')[0]),
-          ...totalPenjualanPerDay.map((entry) => entry.date.toISOString().split('T')[0]),
-          ...totalPengeluaranPerDay.map((entry) => entry.date.toISOString().split('T')[0]),
-        ]),
-      ];
+    const mergedData: Record<string, any> = {};
 
-      const summary = await Promise.all(
-        dates.map(async (date) => {
-          const dailyPembelian = totalPembelianPerDay.find((entry) => entry.date.toISOString().split('T')[0] === date);
-          const dailyPenjualan = totalPenjualanPerDay.find((entry) => entry.date.toISOString().split('T')[0] === date);
-          const dailyPengeluaran = totalPengeluaranPerDay.find(
-            (entry) => entry.date.toISOString().split('T')[0] === date,
-          );
+    totalPembelianPerDay.forEach((entry) => {
+      const date = entry.date.toISOString().slice(0, 10);
+      mergedData[date] = mergedData[date] || {};
+      mergedData[date].totalPembelianPerDay = entry.totalPembelian_productSources;
+    });
 
-          const profits = await this.calculateProfit(totalPembelianPerDay, totalPenjualanPerDay);
+    totalPenjualanPerDay.forEach((entry) => {
+      const date = entry.date.toISOString().slice(0, 10);
+      mergedData[date] = mergedData[date] || {};
+      mergedData[date].totalPenjualanPerDay = entry.totalHarga_product;
+    });
 
-          const profitValue = Number(profits.find((p) => p.date.toISOString().split('T')[0] === date)?.value);
-          const createdPendapatan = await this.prisma.pendapatan.create({
-            data: {
-              tanggal: new Date(date),
-              totalPembelianPerDay: dailyPembelian?.totalPembelian_productSources,
-              totalPenjualanPerDay: dailyPenjualan?.totalHarga_product,
-              totalPengeluaranPerDay: dailyPengeluaran?.totalPengeluaran, 
-              totalKeuntunganPerDay: profitValue,
-              pendapatanBersih: this.calculateNetIncome(
-                Number(dailyPenjualan?.totalHarga_product),
-                Number(dailyPembelian?.totalPembelian_productSources),
-                Number(dailyPengeluaran?.totalPengeluaran),  
-              ),
-            },
-          });
+    totalPengeluaranPerDay.forEach((entry) => {
+      const date = entry.date.toISOString().slice(0, 10);
+      mergedData[date] = mergedData[date] || {};
+      mergedData[date].totalPengeluaranPerDay = entry.totalPengeluaran;
+    });
 
-          const summaryEntry = {
-            id_pendapatan: createdPendapatan.id_pendapatan,
-            date: new Date(date),
-            totalPembelianPerDay: dailyPembelian ? dailyPembelian.totalPembelian_productSources.toString() : '0',
-            totalPenjualanPerDay: dailyPenjualan ? dailyPenjualan.totalHarga_product.toString() : '0',
-            totalPengeluaranPerDay: dailyPengeluaran ? dailyPengeluaran.totalPengeluaran.toString() : '0',  
-            totalKeuntunganPerDay: profits.find((p) => p.date.toISOString().split('T')[0] === date)?.value || '0',
+    const dates = Object.keys(mergedData);
+
+    const summary = await Promise.all(
+      dates.map(async (date) => {
+        const dailyPembelian = mergedData[date].totalPembelianPerDay || '0';
+        const dailyPenjualan = mergedData[date].totalPenjualanPerDay || '0';
+        const dailyPengeluaran = mergedData[date].totalPengeluaranPerDay || '0';
+
+        const profits = await this.calculateProfit(totalPembelianPerDay, totalPenjualanPerDay);
+
+        const profitValue = Number(profits.find((p) => p.date.toISOString().slice(0, 10) === date)?.value);
+        const createdPendapatan = await this.prisma.pendapatan.create({
+          data: {
+            tanggal: new Date(date),
+            totalPembelianPerDay: Number(dailyPembelian),
+            totalPenjualanPerDay: Number(dailyPenjualan),
+            totalPengeluaranPerDay: Number(dailyPengeluaran),
+            totalKeuntunganPerDay: profitValue,
             pendapatanBersih: this.calculateNetIncome(
-              Number(dailyPenjualan ? dailyPenjualan.totalHarga_product : 0),
-              Number(dailyPembelian ? dailyPembelian.totalPembelian_productSources : 0),
-              Number(dailyPengeluaran ? dailyPengeluaran.totalPengeluaran : 0),  
+              Number(dailyPenjualan),
+              Number(dailyPembelian),
+              Number(dailyPengeluaran),
             ),
-          };
+          },
+        });
 
-          return summaryEntry;
-        }),
-      );
+        const summaryEntry = {
+          id_pendapatan: createdPendapatan.id_pendapatan,
+          date: new Date(date),
+          totalPembelianPerDay: dailyPembelian.toString(),
+          totalPenjualanPerDay: dailyPenjualan.toString(),
+          totalPengeluaranPerDay: dailyPengeluaran.toString(),
+          totalKeuntunganPerDay: profits.find((p) => p.date.toISOString().slice(0, 10) === date)?.value || '0',
+          pendapatanBersih: this.calculateNetIncome(
+            Number(dailyPenjualan),
+            Number(dailyPembelian),
+            Number(dailyPengeluaran),
+          ),
+        };
 
-      return summary;
-    } catch (error) {
-      console.error('Error getting summary:', error);
-      throw error;
-    }
+        return summaryEntry;
+      }),
+    );
+
+    return summary;
+  } catch (error) {
+    console.error('Error getting summary:', error);
+    throw error;
   }
+}
 
 
-  async calculateTotalPendapatanPerMonth(): Promise<any[]> {
+
+  // Pendapatan Per Bulan
+// Pendapatan Per Bulan
+async calculateTotalPendapatanPerMonth(): Promise<any[]> {
   try {
     const totalSummary = await this.getSummary();
+
+    // Objek yang berisi nama-nama bulan
+    const monthNames = [
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
+    ];
 
     const monthlySummary: Record<string, { month: number; year: number; totalPendapatan: number }> = totalSummary.reduce(
       (acc, entry) => {
         const monthYearKey = entry.date.toLocaleDateString('en-US', { month: 'numeric', year: 'numeric' });
+        const monthIndex = entry.date.getMonth();
 
         if (!acc[monthYearKey]) {
           acc[monthYearKey] = {
-            month: entry.date.getMonth() + 1,
+            month: monthIndex + 1,
             year: entry.date.getFullYear(),
             totalPendapatan: 0,
           };
@@ -204,10 +236,10 @@ calculateNetIncome(totalSales: number, totalPurchases: number, totalExpenses: nu
       {},
     );
 
-    const result: { month: number; year: number; totalPendapatan: string }[] = Object.values(monthlySummary).map((entry) => ({
-      month: entry.month,
+    const result: { month: string; year: number; totalPendapatan: string }[] = Object.values(monthlySummary).map((entry) => ({
+      month: monthNames[entry.month - 1], // Ambil nama bulan dari array monthNames
       year: entry.year,
-      totalPendapatan: entry.totalPendapatan.toFixed(), 
+      totalPendapatan: entry.totalPendapatan.toFixed(),
     }));
 
     return result;
@@ -217,6 +249,8 @@ calculateNetIncome(totalSales: number, totalPurchases: number, totalExpenses: nu
   }
 }
 
+
+// Pendapatan per tahun
 async calculateAccumulatedNetIncome(): Promise<{ year: number; total: number }[]> {
     try {
       const summary = await this.getSummary();

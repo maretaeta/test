@@ -62,7 +62,6 @@ model ProductSources {
   jenis_productSources          String?
   nama_productSources           String?
   ukuran_productSources         String?
-  satuan_productSources         String?
   jumlah_productSources         Int?
   pembelian_productSources      Int?
   ongkosProses_productSources   Int?
@@ -82,7 +81,6 @@ model Users {
   penjualan      Penjualan[]
   productSources ProductSources[]
   pendapatan     Pendapatan[]
-  karyawan       Karyawan[]
   Pengeluaran    Pengeluaran[]
 }
 
@@ -101,26 +99,10 @@ model Pendapatan {
   userId                     Int?
   penjualan                  Penjualan?                @relation(fields: [penjualanId], references: [id_penjualan])
   penjualanId                Int?                      @unique
-  PendapatanBersihPerMonth   PendapatanBersihPerMonth? @relation(fields: [pendapatanBersihPerMonthId], references: [id_pendapatanMonth])
-  pendapatanBersihPerMonthId Int?
-  pendapatanBersihYears      PendapatanBersihYears?    @relation(fields: [pendapatanBersihYearId], references: [id_pendapatanYear])
-  pendapatanBersihYearId     Int?
+
 }
 
-model PendapatanBersihPerMonth {
-  id_pendapatanMonth Int          @id @default(autoincrement())
-  month              Int
-  year               Int
-  totalBersih        Int
-  pendapatanItems    Pendapatan[]
-}
 
-model PendapatanBersihYears {
-  id_pendapatanYear Int          @id @default(autoincrement())
-  year              Int?
-  totalPendapatan   Int?
-  pendapatan        Pendapatan[]
-}
 
 model Pengeluaran {
   id_pengeluaran Int      @id @default(autoincrement())
@@ -129,14 +111,4 @@ model Pengeluaran {
   tanggal        DateTime
   user           Users?   @relation(fields: [userId], references: [id_users])
   userId         Int?
-}
-
-model Karyawan {
-  id_karyawan   Int       @id @default(autoincrement())
-  nama_karyawan String?
-  jabatan       String?
-  gaji          Int?
-  tanggal_masuk DateTime?
-  user          Users?    @relation(fields: [userId], references: [id_users])
-  userId        Int?
 }

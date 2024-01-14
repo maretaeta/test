@@ -55,7 +55,6 @@ CREATE TABLE "ProductSources" (
     "jenis_productSources" TEXT,
     "nama_productSources" TEXT,
     "ukuran_productSources" TEXT,
-    "satuan_productSources" TEXT,
     "jumlah_productSources" INTEGER,
     "pembelian_productSources" INTEGER,
     "ongkosProses_productSources" INTEGER,
@@ -102,21 +101,8 @@ CREATE TABLE "Pengeluaran" (
     "keterangan" TEXT,
     "tanggal" TIMESTAMP(3) NOT NULL,
     "userId" INTEGER,
-    "id_pendapatan" INTEGER NOT NULL,
 
     CONSTRAINT "Pengeluaran_pkey" PRIMARY KEY ("id_pengeluaran")
-);
-
--- CreateTable
-CREATE TABLE "Karyawan" (
-    "id_karyawan" SERIAL NOT NULL,
-    "nama_karyawan" TEXT,
-    "jabatan" TEXT,
-    "gaji" INTEGER,
-    "tanggal_masuk" TIMESTAMP(3),
-    "userId" INTEGER,
-
-    CONSTRAINT "Karyawan_pkey" PRIMARY KEY ("id_karyawan")
 );
 
 -- CreateTable
@@ -169,12 +155,6 @@ ALTER TABLE "Pendapatan" ADD CONSTRAINT "Pendapatan_penjualanId_fkey" FOREIGN KE
 
 -- AddForeignKey
 ALTER TABLE "Pengeluaran" ADD CONSTRAINT "Pengeluaran_userId_fkey" FOREIGN KEY ("userId") REFERENCES "Users"("id_users") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Pengeluaran" ADD CONSTRAINT "Pengeluaran_id_pendapatan_fkey" FOREIGN KEY ("id_pendapatan") REFERENCES "Pendapatan"("id_pendapatan") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Karyawan" ADD CONSTRAINT "Karyawan_userId_fkey" FOREIGN KEY ("userId") REFERENCES "Users"("id_users") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_PenjualanToProduct" ADD CONSTRAINT "_PenjualanToProduct_A_fkey" FOREIGN KEY ("A") REFERENCES "Penjualan"("id_penjualan") ON DELETE CASCADE ON UPDATE CASCADE;
