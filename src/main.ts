@@ -5,10 +5,10 @@ async function bootstrap() {
   try {
     const app = await NestFactory.create(AppModule);
 
-    const corsOptions = {
-      origin: 'http://localhost:5173', 
-      methods: 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS',
-    };
+  const corsOptions = {
+    origin: ['http://localhost:5173', 'https://manage-operational-app.vercel.app'],
+    methods: 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS',
+  };
 
     app.enableCors(corsOptions);
 
