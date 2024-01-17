@@ -85,9 +85,9 @@ export class PendapatanService {
     return finalResult;
   }
 
-calculateNetIncome(totalSales: number, totalPurchases: number, totalExpenses: number): number {
-  return totalSales - totalPurchases - totalExpenses;
-}
+  calculateNetIncome(totalSales: number, totalPurchases: number, totalExpenses: number): number {
+    return totalSales - totalPurchases - totalExpenses;
+  }
 
 
   async calculateProfit(totalPembelianPerDay: any[], totalPenjualanPerDay: any[]): Promise<{ date: Date; value: string }[]> {
@@ -114,7 +114,7 @@ calculateNetIncome(totalSales: number, totalPurchases: number, totalExpenses: nu
     }
   }
 
-  async getSummary(): Promise<any[]> {
+async getSummary(): Promise<any[]> {
   try {
     const totalPembelianPerDay = await this.calculateTotalPembelianPerDay();
     const totalPenjualanPerDay = await this.calculateTotalPenjualanPerDay();
@@ -148,12 +148,16 @@ calculateNetIncome(totalSales: number, totalPurchases: number, totalExpenses: nu
         const dailyPenjualan = mergedData[date].totalPenjualanPerDay || '0';
         const dailyPengeluaran = mergedData[date].totalPengeluaranPerDay || '0';
 
-        const profits = await this.calculateProfit(totalPembelianPerDay, totalPenjualanPerDay);
+        const profitDate = new Date(date);
+        const profits = await this.calculateProfit(
+          totalPembelianPerDay.filter((p) => p.date.toISOString().slice(0, 10) === date),
+          totalPenjualanPerDay.filter((p) => p.date.toISOString().slice(0, 10) === date),
+        );
 
-        const profitValue = Number(profits.find((p) => p.date.toISOString().slice(0, 10) === date)?.value);
+        const profitValue = Number(profits[0]?.value);
         const createdPendapatan = await this.prisma.pendapatan.create({
           data: {
-            tanggal: new Date(date),
+            tanggal: profitDate, // Use the actual date of purchase and sale
             totalPembelianPerDay: Number(dailyPembelian),
             totalPenjualanPerDay: Number(dailyPenjualan),
             totalPengeluaranPerDay: Number(dailyPengeluaran),
@@ -168,11 +172,11 @@ calculateNetIncome(totalSales: number, totalPurchases: number, totalExpenses: nu
 
         const summaryEntry = {
           id_pendapatan: createdPendapatan.id_pendapatan,
-          date: new Date(date),
+          date: profitDate,
           totalPembelianPerDay: dailyPembelian.toString(),
           totalPenjualanPerDay: dailyPenjualan.toString(),
           totalPengeluaranPerDay: dailyPengeluaran.toString(),
-          totalKeuntunganPerDay: profits.find((p) => p.date.toISOString().slice(0, 10) === date)?.value || '0',
+          totalKeuntunganPerDay: profitValue || '0',
           pendapatanBersih: this.calculateNetIncome(
             Number(dailyPenjualan),
             Number(dailyPembelian),
@@ -190,6 +194,7 @@ calculateNetIncome(totalSales: number, totalPurchases: number, totalExpenses: nu
     throw error;
   }
 }
+
 
 
 

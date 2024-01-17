@@ -123,21 +123,24 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
 
 
     // Update pembelian barang
-    async updateProductSource(id_productSources: number, data: ProductSources): Promise<ProductSources | null> {
-     try {
-        const existingProductSource = await this.prisma.productSources.findUnique({     
+   async updateProductSource(id_productSources: number, data: ProductSources): Promise<ProductSources | null> {
+    try {
+        const existingProductSource = await this.prisma.productSources.findUnique({
             where: {
-                id_productSources:Number(id_productSources)
-            }
+                id_productSources: Number(id_productSources),
+            },
         });
 
         if (!existingProductSource) {
             return null;
         }
 
-        const totalHarga = this.calculateTotalHarga(data.jumlah_productSources, data.pembelian_productSources, data.ongkosProses_productSources);
-        // const hargaPerLembar = totalHarga / data.jumlah_productSources / 3;
-        const hargaPerLembar = totalHarga / data.jumlah_productSources ;
+        const totalHarga = this.calculateTotalHarga(
+            data.jumlah_productSources,
+            data.pembelian_productSources,
+            data.ongkosProses_productSources
+        );
+        const hargaPerLembar = totalHarga / data.jumlah_productSources;
 
         let existingProduct = await this.prisma.product.findFirst({
             where: {
@@ -171,7 +174,7 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
         }
 
         const updatedProductSource = await this.prisma.productSources.update({
-            where: { id_productSources:Number(id_productSources) },
+            where: { id_productSources: Number(id_productSources) },
             data: {
                 nama_toko: data.nama_toko,
                 alamat_toko: data.alamat_toko,
@@ -194,6 +197,7 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
         throw error;
     }
 }
+
 
     // Delete pembelian barang
 async deleteProductSources(id_productSources: number): Promise<ProductSources> {

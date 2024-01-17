@@ -159,8 +159,8 @@ async getPenjualan(id_penjualan: number): Promise<penjualan | null> {
     });
   }
 
-  // delete
- async deletePenjualan(id_penjualan: number): Promise<void> {
+// delete
+async deletePenjualan(id_penjualan: number): Promise<void> {
   try {
     // Ambil data penjualan yang akan dihapus
     const deletedPenjualan = await this.prisma.penjualan.findUnique({
@@ -174,6 +174,7 @@ async getPenjualan(id_penjualan: number): Promise<penjualan | null> {
             productId: true,
           },
         },
+        toko: true, // Include the store information
       },
     });
 
@@ -188,12 +189,31 @@ async getPenjualan(id_penjualan: number): Promise<penjualan | null> {
       },
     });
 
+    // Check if the store is associated with other sales records
+    const isStoreAssociated = await this.prisma.penjualan.count({
+      where: {
+        nama_toko: deletedPenjualan.toko.namatoko,
+        id_penjualan: {
+          not: Number(id_penjualan),
+        },
+      },
+    });
+
     // Hapus penjualan
     await this.prisma.penjualan.delete({
       where: {
         id_penjualan: Number(id_penjualan),
       },
     });
+
+    // If the store is not associated with other sales records, delete the store as well
+    if (!isStoreAssociated) {
+      await this.prisma.toko.delete({
+        where: {
+          namatoko: deletedPenjualan.toko.namatoko,
+        },
+      });
+    }
 
     // Kembalikan jumlah produk ke stok
     for (const penjualanItem of deletedPenjualan.penjualanItems) {
@@ -213,6 +233,7 @@ async getPenjualan(id_penjualan: number): Promise<penjualan | null> {
     throw new Error('Terjadi kesalahan saat menghapus penjualan');
   }
 }
+
 
 
 
@@ -325,7 +346,7 @@ async getPenjualan(id_penjualan: number): Promise<penjualan | null> {
             {
               nama_toko: {
                 contains: query,
-                mode: 'insensitive', // case-insensitive search
+                mode: 'insensitive', 
               },
             },
             {

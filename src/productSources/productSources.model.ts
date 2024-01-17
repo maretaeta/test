@@ -10,7 +10,7 @@ export class ProductSources implements Prisma.ProductSourcesCreateInput {
   satuan_productSources?: string;
   jumlah_productSources?: number;
   pembelian_productSources?: number;
-  ongkosProses_productSources?: number;
+  ongkosProses_productSources?: number | null;
   totalPembelian_productSources?: number;
   hargaPerLembar?: number;
 }
