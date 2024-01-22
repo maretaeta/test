@@ -1,6 +1,7 @@
 import { PrismaService } from "src/prisma.service";
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { ProductSources } from "./productSources.model";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Prisma } from "@prisma/client";
 import { monthNameToNumber } from "src/utils";
 
@@ -25,7 +26,7 @@ export class ProductSourcesService {
 		return data;
 	}
 
-	// 
+// check nama toko
 async checkIfStoreExists(namatoko: string, alamat_toko: string): Promise<boolean> {
     const existingStore = await this.prisma.toko.findFirst({
         where: {
@@ -42,7 +43,7 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
 
     try {
         // Check if the product already exists
-        let existingProduct = await this.prisma.product.findFirst({
+        const existingProduct = await this.prisma.product.findFirst({
             where: {
                 jenis_product: data.jenis_productSources,
                 nama_product: data.nama_productSources,
@@ -50,66 +51,49 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
             },
         });
 
-        if (!existingProduct) {
-            // If product does not exist, create a new product
-            existingProduct = await this.prisma.product.create({
-                data: {
-                    jenis_product: data.jenis_productSources,
-                    nama_product: data.nama_productSources,
-                    ukuran_product: data.ukuran_productSources,
-                    stok_product: Number(data.jumlah_productSources),
-                    harga_product: harga,
-                },
-            });
-        }
+        // Create or update product
+        const product = existingProduct
+            ? await this.prisma.product.update({
+                  where: { id_product: existingProduct.id_product },
+                  data: {
+                      stok_product: { increment: Number(data.jumlah_productSources) },
+                      harga_product: harga,
+                  },
+              })
+            : await this.prisma.product.create({
+                  data: {
+                      jenis_product: data.jenis_productSources,
+                      nama_product: data.nama_productSources,
+                      ukuran_product: data.ukuran_productSources,
+                      stok_product: Number(data.jumlah_productSources),
+                      harga_product: harga,
+                  },
+              });
 
-        // Check if the store already exists
-        const storeExists = await this.checkIfStoreExists(data.nama_toko, data.alamat_toko);
-
-        if (!storeExists) {
-            // If store does not exist, create a new store
-            await this.prisma.toko.create({
-                data: {
-                    namatoko: data.nama_toko,
-                    alamat_toko: data.alamat_toko,
-                },
-            });
-        }
-
-        const prismaData: Prisma.ProductSourcesCreateInput = {
-            nama_toko: data.nama_toko,
-            alamat_toko: data.alamat_toko,
-            jenis_productSources: data.jenis_productSources,
-            nama_productSources: data.nama_productSources,
-            ukuran_productSources: data.ukuran_productSources,
-            jumlah_productSources: Number(data.jumlah_productSources),
-            pembelian_productSources: Number(data.pembelian_productSources),
-            ongkosProses_productSources: Number(data.ongkosProses_productSources),
-            totalPembelian_productSources: Number(totalHarga),
-            hargaPerLembar: harga,
-            product: {
-                connect: { id_product: existingProduct.id_product },
+        // Create ProductSources without checking for existing records
+        const productSources = await this.prisma.productSources.create({
+            data: {
+                nama_toko: data.nama_toko,
+                alamat_toko: data.alamat_toko,
+                jenis_productSources: data.jenis_productSources,
+                nama_productSources: data.nama_productSources,
+                ukuran_productSources: data.ukuran_productSources,
+                jumlah_productSources: Number(data.jumlah_productSources),
+                pembelian_productSources: Number(data.pembelian_productSources),
+                ongkosProses_productSources: Number(data.ongkosProses_productSources),
+                totalPembelian_productSources: Number(totalHarga),
+                hargaPerLembar: harga,
+                product: { connect: { id_product: product.id_product } },
             },
-        };
-
-        return this.prisma.productSources.create({
-            data: prismaData,
         });
+
+        return productSources;
     } catch (error) {
-        if (error.code === 'P2002' && error.meta?.modelName === 'Toko' && error.meta?.target?.includes('namatoko')) {
-            // Handle unique constraint violation for namatoko
-            console.error('Store with the same name already exists:', error);
-            throw new Error('Store with the same name already exists.');
-        } else if (error.code === 'P2002' && error.meta?.modelName === 'Product' && error.meta?.target?.includes('nama_product')) {
-            // Handle unique constraint violation for nama_product
-            console.error('Product with the same name already exists:', error);
-            throw new Error('Product with the same name already exists.');
-        } else {
-            console.error('Error creating productSources:', error);
-            throw new Error('Failed to create productSources.');
-        }
+        console.error('Error creating or updating productSources:', error);
+        throw new Error('Failed to create or update productSources.');
     }
 }
+
 
 
 async updateProductSource(id_productSources: number, data: ProductSources): Promise<ProductSources | null> {
