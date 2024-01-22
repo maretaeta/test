@@ -28,6 +28,7 @@ export class penjualanService {
             },
           },
         },
+        toko: true,
       },
     });
   }
@@ -52,8 +53,6 @@ async getPenjualan(id_penjualan: number): Promise<penjualan | null> {
     },
   });
 }
-
-
 
   // create penjualan
   async createPenjualan(
@@ -122,22 +121,23 @@ async getPenjualan(id_penjualan: number): Promise<penjualan | null> {
       const totalHargaSetelahDiskon = totalHarga - data.diskon;
 
       const createdPenjualan = await this.prisma.penjualan.create({
-        data: {
-          nama_toko: tokoData.namatoko,
-          diskon: data.diskon,
-          totalHarga_product: totalHargaSetelahDiskon, 
-          penjualanItems: {
-            create: productsWithDetails.map((product) => ({
-              quantity: product.quantity,
-              productId: product.id_product,
-            }),
-      )},
+      data: {
+        nama_toko: tokoData.namatoko,
+        diskon: data.diskon,
+        totalHarga_product: totalHargaSetelahDiskon, 
+        penjualanItems: {
+          create: productsWithDetails.map((product) => ({
+            quantity: product.quantity,
+            productId: product.id_product,
+          })),
         },
-        include: {
-          penjualanItems: true,
-          toko: true,
-        },
-      });
+      },
+      include: {
+        penjualanItems: true,
+        toko: true,
+      },
+    });
+
 
       return { penjualan: createdPenjualan, products: productsWithDetails };
     } catch (error) {
