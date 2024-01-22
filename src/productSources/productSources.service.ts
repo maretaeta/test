@@ -42,6 +42,19 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
     const harga = totalHarga / data.jumlah_productSources;
 
     try {
+        // Check if the store (toko) already exists
+        const storeExists = await this.checkIfStoreExists(data.nama_toko, data.alamat_toko);
+
+        if (!storeExists) {
+            // If the store doesn't exist, create it
+            await this.prisma.toko.create({
+                data: {
+                    namatoko: data.nama_toko,
+                    alamat_toko: data.alamat_toko,
+                },
+            });
+        }
+
         // Check if the product already exists
         const existingProduct = await this.prisma.product.findFirst({
             where: {
@@ -70,7 +83,7 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
                   },
               });
 
-        // Create ProductSources without checking for existing records
+        // Create ProductSources with the associated store (toko) and product
         const productSources = await this.prisma.productSources.create({
             data: {
                 nama_toko: data.nama_toko,
@@ -93,8 +106,6 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
         throw new Error('Failed to create or update productSources.');
     }
 }
-
-
 
 async updateProductSource(id_productSources: number, data: ProductSources): Promise<ProductSources | null> {
     try {
@@ -157,8 +168,6 @@ async updateProductSource(id_productSources: number, data: ProductSources): Prom
 }
 
 
-
- // Delete pembelian barang
 async deleteProductSources(id_productSources: number): Promise<ProductSources> {
     try {
         const productSources = await this.prisma.productSources.findUnique({
@@ -205,10 +214,15 @@ async deleteProductSources(id_productSources: number): Promise<ProductSources> {
 
         return productSources;
     } catch (error) {
+        if (error instanceof NotFoundException) {
+            return null; 
+        }
+
         console.error(error);
         throw new Error('Failed to delete productSources or related records.');
     }
 }
+
 
 
     private calculateTotalHarga(jumlah: number, harga: number, ongkosProses: number): number {

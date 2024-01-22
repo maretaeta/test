@@ -17,7 +17,7 @@ model Toko {
 
 model Penjualan {
   id_penjualan       Int             @id @default(autoincrement())
-  createdAt          DateTime        @default(dbgenerated("now() at time zone 'WIB'"))
+  createdAt          DateTime        @default(now())
   nama_toko          String?
   diskon             Int?
   totalHarga_product Int?

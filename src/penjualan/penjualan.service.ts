@@ -145,9 +145,6 @@ async getPenjualan(id_penjualan: number): Promise<penjualan | null> {
     }
   }
 
-
-
-
   // update
   async updatePenjualan(id_penjualan: number, updatedData: PenjualanCreateInput): Promise<penjualan> {
     return this.prisma.penjualan.update({
@@ -159,10 +156,9 @@ async getPenjualan(id_penjualan: number): Promise<penjualan | null> {
     });
   }
 
-// delete
+// delete penjualan
 async deletePenjualan(id_penjualan: number): Promise<void> {
   try {
-    // Ambil data penjualan yang akan dihapus
     const deletedPenjualan = await this.prisma.penjualan.findUnique({
       where: {
         id_penjualan: Number(id_penjualan),
@@ -174,7 +170,7 @@ async deletePenjualan(id_penjualan: number): Promise<void> {
             productId: true,
           },
         },
-        toko: true, // Include the store information
+        toko: true,
       },
     });
 
@@ -189,18 +185,6 @@ async deletePenjualan(id_penjualan: number): Promise<void> {
       },
     });
 
-    // Check if the store is associated with other sales records
-    const isStoreAssociated = deletedPenjualan.toko
-      ? await this.prisma.penjualan.count({
-          where: {
-            nama_toko: deletedPenjualan.toko.namatoko,
-            id_penjualan: {
-              not: Number(id_penjualan),
-            },
-          },
-        })
-      : 0;
-
     // Hapus penjualan
     await this.prisma.penjualan.delete({
       where: {
@@ -208,14 +192,21 @@ async deletePenjualan(id_penjualan: number): Promise<void> {
       },
     });
 
-    // If the store is not associated with other sales records, delete the store as well
-    if (!isStoreAssociated && deletedPenjualan.toko) {
+    // Hapus nama toko dari tabel toko jika tidak ada penjualan lain yang terkait
+    const tokoCount = await this.prisma.penjualan.count({
+      where: {
+        id_penjualan: Number(id_penjualan), // Use the unique identifier for the where clause
+      },
+    });
+
+    if (tokoCount === 0) {
       await this.prisma.toko.delete({
         where: {
-          namatoko: deletedPenjualan.toko.namatoko,
+          id_toko: deletedPenjualan.toko.id_toko,
         },
       });
     }
+
 
     // Kembalikan jumlah produk ke stok
     for (const penjualanItem of deletedPenjualan.penjualanItems) {

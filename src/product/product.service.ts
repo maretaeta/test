@@ -33,7 +33,7 @@
             })
         }
 
-    // delete barang
+// delete produk
 async deleteProduct(id_product: number): Promise<product> {
     const transaction = await this.prisma.$transaction(async (prisma) => {
         // Check for PenjualanItem records referencing the product
@@ -42,6 +42,7 @@ async deleteProduct(id_product: number): Promise<product> {
         });
 
         if (penjualanItemsExists.length > 0) {
+             
             await prisma.penjualanItem.deleteMany({
                 where: { productId: Number(id_product) },
             });
