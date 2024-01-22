@@ -51,20 +51,9 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
             },
         });
 
-        if (existingProduct) {
-            // If product exists, update the stock and price
-            await this.prisma.product.update({
-                where: { id_product: existingProduct.id_product },
-                data: {
-                    stok_product: {
-                        increment: Number(data.jumlah_productSources),
-                    },
-                    harga_product: harga,
-                },
-            });
-        } else {
+        if (!existingProduct) {
             // If product does not exist, create a new product
-            const newProduct = await this.prisma.product.create({
+            existingProduct = await this.prisma.product.create({
                 data: {
                     jenis_product: data.jenis_productSources,
                     nama_product: data.nama_productSources,
@@ -73,8 +62,6 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
                     harga_product: harga,
                 },
             });
-
-            existingProduct = newProduct;
         }
 
         // Check if the store already exists
@@ -125,6 +112,7 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
         }
     }
 }
+
 
 async updateProductSource(id_productSources: number, data: ProductSources): Promise<ProductSources | null> {
     try {
