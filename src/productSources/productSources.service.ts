@@ -26,16 +26,15 @@ export class ProductSourcesService {
 	}
 
 	// 
-    async checkIfStoreExists(namatoko: string, alamat_toko: string): Promise<boolean> {
-        const existingStore = await this.prisma.toko.findFirst({
-            where: {
-                namatoko,
-                alamat_toko,
-            },
-        });
-        return !!existingStore;
-    }
-
+async checkIfStoreExists(namatoko: string, alamat_toko: string): Promise<boolean> {
+    const existingStore = await this.prisma.toko.findFirst({
+        where: {
+            namatoko,
+            alamat_toko,
+        },
+    });
+    return !!existingStore;
+}
 
 async createProductSources(data: ProductSources): Promise<ProductSources> {
     const totalHarga = this.calculateTotalHarga(data.jumlah_productSources, data.pembelian_productSources, data.ongkosProses_productSources);
@@ -65,16 +64,11 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
         }
 
         // Check if the store already exists
-        let existingStore = await this.prisma.toko.findFirst({
-            where: {
-                namatoko: data.nama_toko,
-                alamat_toko: data.alamat_toko,
-            },
-        });
+        const storeExists = await this.checkIfStoreExists(data.nama_toko, data.alamat_toko);
 
-        if (!existingStore) {
+        if (!storeExists) {
             // If store does not exist, create a new store
-            existingStore = await this.prisma.toko.create({
+            await this.prisma.toko.create({
                 data: {
                     namatoko: data.nama_toko,
                     alamat_toko: data.alamat_toko,
@@ -102,7 +96,11 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
             data: prismaData,
         });
     } catch (error) {
-        if (error.code === 'P2002' && error.meta?.modelName === 'Product' && error.meta?.target?.includes('nama_product')) {
+        if (error.code === 'P2002' && error.meta?.modelName === 'Toko' && error.meta?.target?.includes('namatoko')) {
+            // Handle unique constraint violation for namatoko
+            console.error('Store with the same name already exists:', error);
+            throw new Error('Store with the same name already exists.');
+        } else if (error.code === 'P2002' && error.meta?.modelName === 'Product' && error.meta?.target?.includes('nama_product')) {
             // Handle unique constraint violation for nama_product
             console.error('Product with the same name already exists:', error);
             throw new Error('Product with the same name already exists.');
