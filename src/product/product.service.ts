@@ -33,39 +33,43 @@
             })
         }
 
-        // delete barang
+    // delete barang
 async deleteProduct(id_product: number): Promise<product> {
-    try {
+    const transaction = await this.prisma.$transaction(async (prisma) => {
         // Check for PenjualanItem records referencing the product
-        const penjualanItemsExists = await this.prisma.penjualanItem.findMany({
+        const penjualanItemsExists = await prisma.penjualanItem.findMany({
             where: { productId: Number(id_product) },
         });
 
         if (penjualanItemsExists.length > 0) {
-            await this.prisma.penjualanItem.deleteMany({
+            await prisma.penjualanItem.deleteMany({
                 where: { productId: Number(id_product) },
             });
         }
 
         // Check for ProductSources records referencing the product
-        const productSourcesExists = await this.prisma.productSources.findMany({
+        const productSourcesExists = await prisma.productSources.findMany({
             where: { id_product: Number(id_product) },
         });
 
         if (productSourcesExists.length > 0) {
-            await this.prisma.productSources.deleteMany({
+            await prisma.productSources.deleteMany({
                 where: { id_product: Number(id_product) },
             });
         }
 
-        return this.prisma.product.delete({
+        return prisma.product.delete({
             where: { id_product: Number(id_product) },
         });
-    } catch (error) {
-        console.error(error);
-        throw new Error('Failed to delete product or related records.');
-    }
-}
+    });
+
+    return transaction;
+
+        } catch (error) {
+            console.error(error);
+            throw new Error('Failed to delete product or related records.');
+        }
+    
 
 
     // total barang yang ada

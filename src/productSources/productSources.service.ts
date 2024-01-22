@@ -37,97 +37,103 @@ export class ProductSourcesService {
     }
 
 
-   // Create pembelian
 async createProductSources(data: ProductSources): Promise<ProductSources> {
-    let existingProduct = await this.prisma.product.findFirst({
-        where: {
-            jenis_product: data.jenis_productSources,
-            nama_product: data.nama_productSources,
-            ukuran_product: data.ukuran_productSources,
-        },
-    });
+    const totalHarga = this.calculateTotalHarga(data.jumlah_productSources, data.pembelian_productSources, data.ongkosProses_productSources);
+    const harga = totalHarga / data.jumlah_productSources;
 
-    if (existingProduct) {
-        await this.prisma.product.update({
-            where: { id_product: existingProduct.id_product },
-            data: {
-                stok_product: {
-                    increment: Number(data.jumlah_productSources),
-                },
-            },
-        });
-    } else {
-        const totalHarga = this.calculateTotalHarga(data.jumlah_productSources, data.pembelian_productSources, data.ongkosProses_productSources);
-        // const harga = totalHarga / data.jumlah_productSources / 3;
-         const harga = totalHarga / data.jumlah_productSources;
-
-        const newProduct = await this.prisma.product.create({
-            data: {
+    try {
+        // Check if the product already exists
+        let existingProduct = await this.prisma.product.findFirst({
+            where: {
                 jenis_product: data.jenis_productSources,
                 nama_product: data.nama_productSources,
                 ukuran_product: data.ukuran_productSources,
-                stok_product: Number(data.jumlah_productSources),
-                harga_product: harga,
             },
         });
 
-        existingProduct = newProduct;
-    }
+        if (existingProduct) {
+            // If product exists, update the stock and price
+            await this.prisma.product.update({
+                where: { id_product: existingProduct.id_product },
+                data: {
+                    stok_product: {
+                        increment: Number(data.jumlah_productSources),
+                    },
+                    harga_product: harga,
+                },
+            });
+        } else {
+            // If product does not exist, create a new product
+            const newProduct = await this.prisma.product.create({
+                data: {
+                    jenis_product: data.jenis_productSources,
+                    nama_product: data.nama_productSources,
+                    ukuran_product: data.ukuran_productSources,
+                    stok_product: Number(data.jumlah_productSources),
+                    harga_product: harga,
+                },
+            });
 
-    // Check if the store already exists
-    const existingStore = await this.prisma.toko.findFirst({
-        where: {
-            namatoko: data.nama_toko,
-            alamat_toko: data.alamat_toko,
-        },
-    });
+            existingProduct = newProduct;
+        }
 
-    if (!existingStore) {
-        try {
-            // Only create a new store if it doesn't already exist
-            await this.prisma.toko.create({
+        // Check if the store already exists
+        let existingStore = await this.prisma.toko.findFirst({
+            where: {
+                namatoko: data.nama_toko,
+                alamat_toko: data.alamat_toko,
+            },
+        });
+
+        if (!existingStore) {
+            // If store does not exist, create a new store
+            existingStore = await this.prisma.toko.create({
                 data: {
                     namatoko: data.nama_toko,
                     alamat_toko: data.alamat_toko,
                 },
             });
-        } catch (error) {
-            console.error('Error creating store:', error);
+        }
+
+        const prismaData: Prisma.ProductSourcesCreateInput = {
+            nama_toko: data.nama_toko,
+            alamat_toko: data.alamat_toko,
+            jenis_productSources: data.jenis_productSources,
+            nama_productSources: data.nama_productSources,
+            ukuran_productSources: data.ukuran_productSources,
+            jumlah_productSources: Number(data.jumlah_productSources),
+            pembelian_productSources: Number(data.pembelian_productSources),
+            ongkosProses_productSources: Number(data.ongkosProses_productSources),
+            totalPembelian_productSources: Number(totalHarga),
+            hargaPerLembar: harga,
+            product: {
+                connect: { id_product: existingProduct.id_product },
+            },
+        };
+
+        return this.prisma.productSources.create({
+            data: prismaData,
+        });
+    } catch (error) {
+        if (error.code === 'P2002' && error.meta?.modelName === 'Product' && error.meta?.target?.includes('nama_product')) {
+            // Handle unique constraint violation for nama_product
+            console.error('Product with the same name already exists:', error);
+            throw new Error('Product with the same name already exists.');
+        } else {
+            console.error('Error creating productSources:', error);
+            throw new Error('Failed to create productSources.');
         }
     }
-
-    const totalHarga = this.calculateTotalHarga(data.jumlah_productSources, data.pembelian_productSources, data.ongkosProses_productSources);
-    // const harga = totalHarga / data.jumlah_productSources / 3;
-     const harga = totalHarga / data.jumlah_productSources;
-
-    const prismaData: Prisma.ProductSourcesCreateInput = {
-        nama_toko: data.nama_toko,
-        alamat_toko: data.alamat_toko,
-        jenis_productSources: data.jenis_productSources,
-        nama_productSources: data.nama_productSources,
-        ukuran_productSources: data.ukuran_productSources,
-        jumlah_productSources: Number(data.jumlah_productSources),
-        pembelian_productSources: Number(data.pembelian_productSources),
-        ongkosProses_productSources: Number(data.ongkosProses_productSources),
-        totalPembelian_productSources: Number(totalHarga),
-        hargaPerLembar: harga,
-        product: {
-            connect: { id_product: existingProduct.id_product },
-        },
-    };
-
-    return this.prisma.productSources.create({
-        data: prismaData,
-    });
 }
 
-
-    // Update pembelian barang
-   async updateProductSource(id_productSources: number, data: ProductSources): Promise<ProductSources | null> {
+async updateProductSource(id_productSources: number, data: ProductSources): Promise<ProductSources | null> {
     try {
         const existingProductSource = await this.prisma.productSources.findUnique({
             where: {
                 id_productSources: Number(id_productSources),
+            },
+            include: {
+                product: true,
             },
         });
 
@@ -142,29 +148,14 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
         );
         const hargaPerLembar = totalHarga / data.jumlah_productSources;
 
-        let existingProduct = await this.prisma.product.findFirst({
-            where: {
-                jenis_product: data.jenis_productSources,
-                nama_product: data.nama_productSources,
-                ukuran_product: data.ukuran_productSources,
-            },
-        });
-
-        if (!existingProduct) {
-            const newProduct = await this.prisma.product.create({
+        // Update the existing product if it exists
+        if (existingProductSource.product) {
+            await this.prisma.product.update({
+                where: { id_product: existingProductSource.product.id_product },
                 data: {
                     jenis_product: data.jenis_productSources,
                     nama_product: data.nama_productSources,
                     ukuran_product: data.ukuran_productSources,
-                    stok_product: data.jumlah_productSources - existingProductSource.jumlah_productSources,
-                    harga_product: hargaPerLembar,
-                },
-            });
-            existingProduct = newProduct;
-        } else {
-            await this.prisma.product.update({
-                where: { id_product: existingProduct.id_product },
-                data: {
                     stok_product: {
                         increment: data.jumlah_productSources - existingProductSource.jumlah_productSources,
                     },
@@ -186,9 +177,6 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
                 ongkosProses_productSources: data.ongkosProses_productSources,
                 totalPembelian_productSources: totalHarga,
                 hargaPerLembar,
-                product: {
-                    connect: { id_product: existingProduct.id_product },
-                },
             },
         });
 
@@ -199,7 +187,8 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
 }
 
 
-    // Delete pembelian barang
+
+ // Delete pembelian barang
 async deleteProductSources(id_productSources: number): Promise<ProductSources> {
     try {
         const productSources = await this.prisma.productSources.findUnique({
@@ -237,10 +226,12 @@ async deleteProductSources(id_productSources: number): Promise<ProductSources> {
             where: { id_productSources: Number(id_productSources) },
         });
 
-        // Delete the corresponding product record
-        await this.prisma.product.delete({
-            where: { id_product: productSources.product.id_product },
-        });
+        // Delete the corresponding product record if it exists
+        if (productSources.product) {
+            await this.prisma.product.delete({
+                where: { id_product: productSources.product.id_product },
+            });
+        }
 
         return productSources;
     } catch (error) {
@@ -248,7 +239,6 @@ async deleteProductSources(id_productSources: number): Promise<ProductSources> {
         throw new Error('Failed to delete productSources or related records.');
     }
 }
-
 
 
     private calculateTotalHarga(jumlah: number, harga: number, ongkosProses: number): number {

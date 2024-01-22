@@ -190,14 +190,16 @@ async deletePenjualan(id_penjualan: number): Promise<void> {
     });
 
     // Check if the store is associated with other sales records
-    const isStoreAssociated = await this.prisma.penjualan.count({
-      where: {
-        nama_toko: deletedPenjualan.toko.namatoko,
-        id_penjualan: {
-          not: Number(id_penjualan),
-        },
-      },
-    });
+    const isStoreAssociated = deletedPenjualan.toko
+      ? await this.prisma.penjualan.count({
+          where: {
+            nama_toko: deletedPenjualan.toko.namatoko,
+            id_penjualan: {
+              not: Number(id_penjualan),
+            },
+          },
+        })
+      : 0;
 
     // Hapus penjualan
     await this.prisma.penjualan.delete({
@@ -207,7 +209,7 @@ async deletePenjualan(id_penjualan: number): Promise<void> {
     });
 
     // If the store is not associated with other sales records, delete the store as well
-    if (!isStoreAssociated) {
+    if (!isStoreAssociated && deletedPenjualan.toko) {
       await this.prisma.toko.delete({
         where: {
           namatoko: deletedPenjualan.toko.namatoko,
@@ -233,8 +235,6 @@ async deletePenjualan(id_penjualan: number): Promise<void> {
     throw new Error('Terjadi kesalahan saat menghapus penjualan');
   }
 }
-
-
 
 
   // total penjualan

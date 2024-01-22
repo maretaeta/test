@@ -42,7 +42,7 @@ model PenjualanItem {
 model Product {
   id_product        Int              @id @default(autoincrement())
   jenis_product     String?          @db.VarChar(225)
-  nama_product      String?          @unique
+  nama_product      String?
   ukuran_product    String?          @db.VarChar(50)
   stok_product      Int?
   harga_product     Int?
@@ -85,24 +85,21 @@ model Users {
 }
 
 model Pendapatan {
-  id_pendapatan              Int                       @id @default(autoincrement())
-  tanggal                    DateTime
-  totalPembelianPerDay       Int?
-  totalPenjualanPerDay       Int?
-  totalKeuntunganPerDay      Int?
-  totalPengeluaranPerDay     Int?
-  pengeluaranPerDay          Int?
-  pendapatanBersih           Int?
-  totalPendapatanPerMonth    Int?
-  totalPendapatanPerYears    Int?
-  user                       Users?                    @relation(fields: [userId], references: [id_users])
-  userId                     Int?
-  penjualan                  Penjualan?                @relation(fields: [penjualanId], references: [id_penjualan])
-  penjualanId                Int?                      @unique
-
+  id_pendapatan           Int        @id @default(autoincrement())
+  tanggal                 DateTime
+  totalPembelianPerDay    Int?
+  totalPenjualanPerDay    Int?
+  totalKeuntunganPerDay   Int?
+  totalPengeluaranPerDay  Int?
+  pengeluaranPerDay       Int?
+  pendapatanBersih        Int?
+  totalPendapatanPerMonth Int?
+  totalPendapatanPerYears Int?
+  user                    Users?     @relation(fields: [userId], references: [id_users])
+  userId                  Int?
+  penjualan               Penjualan? @relation(fields: [penjualanId], references: [id_penjualan])
+  penjualanId             Int?       @unique
 }
-
-
 
 model Pengeluaran {
   id_pengeluaran Int      @id @default(autoincrement())
