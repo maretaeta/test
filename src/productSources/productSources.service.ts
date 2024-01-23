@@ -181,23 +181,37 @@ async deleteProductSources(id_productSources: number): Promise<ProductSources> {
             throw new NotFoundException('ProductSources not found');
         }
 
+        const { nama_toko, alamat_toko } = productSources;
+
         // Check if there are other ProductSources records referencing the same store
         const otherProductSources = await this.prisma.productSources.findMany({
             where: {
-                nama_toko: productSources.nama_toko,
-                alamat_toko: productSources.alamat_toko,
+                nama_toko,
+                alamat_toko,
                 id_productSources: { not: Number(id_productSources) },
             },
         });
 
         // If no other ProductSources records, delete the store from the toko table
         if (otherProductSources.length === 0) {
-            await this.prisma.toko.delete({
+            // Check if the toko record exists before attempting to delete
+            const existingToko = await this.prisma.toko.findUnique({
                 where: {
-                    namatoko: productSources.nama_toko,
-                    alamat_toko: productSources.alamat_toko,
+                    namatoko: nama_toko,
+                    alamat_toko: alamat_toko,
                 },
             });
+
+            if (existingToko) {
+                await this.prisma.toko.delete({
+                    where: {
+                        namatoko: nama_toko,
+                        alamat_toko: alamat_toko,
+                    },
+                });
+            } else {
+                console.error('Toko record not found for deletion:', { namatoko: nama_toko, alamat_toko });
+            }
         }
 
         // Delete the productSources record
@@ -215,13 +229,14 @@ async deleteProductSources(id_productSources: number): Promise<ProductSources> {
         return productSources;
     } catch (error) {
         if (error instanceof NotFoundException) {
-            return null; 
+            return null;
         }
 
         console.error(error);
         throw new Error('Failed to delete productSources or related records.');
     }
 }
+
 
 
 

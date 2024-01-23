@@ -192,21 +192,24 @@ async deletePenjualan(id_penjualan: number): Promise<void> {
       },
     });
 
-    // Hapus nama toko dari tabel toko jika tidak ada penjualan lain yang terkait
-    const tokoCount = await this.prisma.penjualan.count({
+    // Hapus nama toko dari tabel toko hanya jika tidak ada penjualan lain yang terkait
+    const otherPenjualanCount = await this.prisma.penjualan.count({
       where: {
-        id_penjualan: Number(id_penjualan), // Use the unique identifier for the where clause
+        toko: {
+          id_toko: deletedPenjualan.toko.id_toko,
+        },
+        id_penjualan: { not: Number(id_penjualan) },
       },
     });
 
-    if (tokoCount === 0) {
+    if (otherPenjualanCount === 0) {
+      // If there are no other penjualan associated with this toko, then delete the toko
       await this.prisma.toko.delete({
         where: {
           id_toko: deletedPenjualan.toko.id_toko,
         },
       });
     }
-
 
     // Kembalikan jumlah produk ke stok
     for (const penjualanItem of deletedPenjualan.penjualanItems) {

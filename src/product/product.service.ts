@@ -33,44 +33,47 @@
             })
         }
 
-// delete produk
+// delete product
 async deleteProduct(id_product: number): Promise<product> {
-    const transaction = await this.prisma.$transaction(async (prisma) => {
-        // Check for PenjualanItem records referencing the product
-        const penjualanItemsExists = await prisma.penjualanItem.findMany({
-            where: { productId: Number(id_product) },
-        });
-
-        if (penjualanItemsExists.length > 0) {
-             
-            await prisma.penjualanItem.deleteMany({
+    try {
+        const deletedProduct = await this.prisma.$transaction(async (prisma) => {
+            // Check for PenjualanItem records referencing the product
+            const penjualanItemsExists = await prisma.penjualanItem.findMany({
                 where: { productId: Number(id_product) },
             });
-        }
 
-        // Check for ProductSources records referencing the product
-        const productSourcesExists = await prisma.productSources.findMany({
-            where: { id_product: Number(id_product) },
-        });
+            if (penjualanItemsExists.length > 0) {
+                await prisma.penjualanItem.deleteMany({
+                    where: { productId: Number(id_product) },
+                });
+            }
 
-        if (productSourcesExists.length > 0) {
-            await prisma.productSources.deleteMany({
+            // Check for ProductSources records referencing the product
+            const productSourcesExists = await prisma.productSources.findMany({
                 where: { id_product: Number(id_product) },
             });
-        }
 
-        return prisma.product.delete({
-            where: { id_product: Number(id_product) },
+            if (productSourcesExists.length > 0) {
+                await prisma.productSources.deleteMany({
+                    where: { id_product: Number(id_product) },
+                });
+            }
+
+            // Delete the product
+            const deletedProduct = await prisma.product.delete({
+                where: { id_product: Number(id_product) },
+            });
+
+            return deletedProduct;
         });
-    });
 
-    return transaction;
+        return deletedProduct;
+    } catch (error) {
+        console.error(error);
+        throw new Error('Failed to delete product or related records.');
+    }
+}
 
-        } catch (error) {
-            console.error(error);
-            throw new Error('Failed to delete product or related records.');
-        }
-    
 
 
     // total barang yang ada
