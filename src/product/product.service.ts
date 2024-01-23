@@ -33,39 +33,57 @@
             })
         }
 
-         // delete barang
-async deleteProduct(id_product: number): Promise<product> {
-    try {
-        // Check for PenjualanItem records referencing the product
-        const penjualanItemsExists = await this.prisma.penjualanItem.findMany({
-            where: { productId: Number(id_product) },
-        });
+ async deleteProduct(id_product: number): Promise<product> {
+  try {
+    // Check if the product exists
+    const existingProduct = await this.prisma.product.findUnique({
+      where: { id_product: Number(id_product) },
+    });
 
-        if (penjualanItemsExists.length > 0) {
-            await this.prisma.penjualanItem.deleteMany({
-                where: { productId: Number(id_product) },
-            });
-        }
-
-        // Check for ProductSources records referencing the product
-        const productSourcesExists = await this.prisma.productSources.findMany({
-            where: { id_product: Number(id_product) },
-        });
-
-        if (productSourcesExists.length > 0) {
-            await this.prisma.productSources.deleteMany({
-                where: { id_product: Number(id_product) },
-            });
-        }
-
-        return this.prisma.product.delete({
-            where: { id_product: Number(id_product) },
-        });
-    } catch (error) {
-        console.error(error);
-        throw new Error('Failed to delete product or related records.');
+    if (!existingProduct) {
+      // Product not found, handle the situation (throw an error or return a response)
+      throw new Error('Product not found.');
     }
+
+    // Check for PenjualanItem records referencing the product
+    const penjualanItemsExists = await this.prisma.penjualanItem.findMany({
+      where: { productId: Number(id_product) },
+    });
+
+    // Optionally, you can update the foreign key references to null instead of deleting
+    if (penjualanItemsExists.length > 0) {
+      // Batch update each record
+      await this.prisma.penjualanItem.updateMany({
+        where: { productId: Number(id_product) },
+        data: {
+          productId: null,
+        },
+      });
+    }
+
+    // Check for ProductSources records referencing the product
+    const productSourcesExists = await this.prisma.productSources.findMany({
+      where: { id_product: Number(id_product) },
+    });
+
+    if (productSourcesExists.length > 0) {
+      await this.prisma.productSources.deleteMany({
+        where: { id_product: Number(id_product) },
+      });
+    }
+
+    // Delete the product
+    return this.prisma.product.delete({
+      where: { id_product: Number(id_product) },
+    });
+  } catch (error) {
+    console.error(error);
+    throw new Error('Failed to delete product or related records.');
+  }
 }
+
+
+
 
     // total barang yang ada
     async sumTotalStockByMonth(monthName: string): Promise<{ month: string; total: number }> {
