@@ -28,7 +28,6 @@ export class penjualanService {
             },
           },
         },
-        toko: true,
       },
     });
   }
@@ -178,6 +177,11 @@ async deletePenjualan(id_penjualan: number): Promise<void> {
       throw new Error('Penjualan not found');
     }
 
+    // Periksa apakah referensi ke toko masih ada di data penjualan
+    if (!deletedPenjualan.toko) {
+      throw new Error('Toko not found in the penjualan data');
+    }
+
     // Hapus terlebih dahulu data terkait di tabel anak (penjualanItems)
     await this.prisma.penjualanItem.deleteMany({
       where: {
@@ -210,6 +214,7 @@ async deletePenjualan(id_penjualan: number): Promise<void> {
     throw new Error('Terjadi kesalahan saat menghapus penjualan');
   }
 }
+
 
 
   // total penjualan
