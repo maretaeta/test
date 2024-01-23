@@ -155,7 +155,7 @@ async getPenjualan(id_penjualan: number): Promise<penjualan | null> {
     });
   }
 
-// delete penjualan
+ // delete penjualan
 async deletePenjualan(id_penjualan: number): Promise<void> {
   try {
     const deletedPenjualan = await this.prisma.penjualan.findUnique({
@@ -175,11 +175,6 @@ async deletePenjualan(id_penjualan: number): Promise<void> {
 
     if (!deletedPenjualan) {
       throw new Error('Penjualan not found');
-    }
-
-    // Periksa apakah referensi ke toko masih ada di data penjualan
-    if (!deletedPenjualan.toko) {
-      throw new Error('Toko not found in the penjualan data');
     }
 
     // Hapus terlebih dahulu data terkait di tabel anak (penjualanItems)
