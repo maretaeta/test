@@ -169,7 +169,6 @@ async deletePenjualan(id_penjualan: number): Promise<void> {
             productId: true,
           },
         },
-        toko: true,
       },
     });
 
@@ -254,6 +253,7 @@ async deletePenjualan(id_penjualan: number): Promise<void> {
         },
       },
     });
+    
 
     // Menghitung total penjualan dan total harga untuk setiap toko
     const tokoData: { nama_toko: string; totalPenjualan: number; totalHarga: number }[] = [];
@@ -308,75 +308,65 @@ async deletePenjualan(id_penjualan: number): Promise<void> {
 
       return penjualanByJenisProduk;
     } catch (error) {
-      console.error('Error getting penjualan by jenis produk:', error);
+      console.error('Error getting penjualan by jenis  :', error);
       throw new Error('Error getting penjualan by jenis produk');
     }
   }
 
-    async searchPenjualan(query: string): Promise<penjualan[]> {
-    try {
-      const penjualanSearchResult = await this.prisma.penjualan.findMany({
-        where: {
-          OR: [
-            {
-              nama_toko: {
-                contains: query,
-                mode: 'insensitive', 
-              },
+  async searchPenjualan(query: string): Promise<penjualan[]> {
+  try {
+    const penjualanSearchResult = await this.prisma.penjualan.findMany({
+      where: {
+        OR: [
+          {
+            nama_toko: {
+              contains: query,
+              mode: 'insensitive',
             },
-            {
-              penjualanItems: {
-                some: {
-                  product: {
-                    OR: [
-                      {
-                        jenis_product: {
-                          contains: query,
-                          mode: 'insensitive',
-                        },
+          },
+          {
+            penjualanItems: {
+              some: {
+                product: {
+                  OR: [
+                    {
+                      jenis_product: {
+                        contains: query,
+                        mode: 'insensitive',
                       },
-                      {
-                        penjualanItems: {
-                          some: {
-                            OR: [
-                              {
-                                quantity: {
-                                  equals: parseInt(query) || undefined,
-                                },
-                              },
-                            ],
-                          },
-                        },
-                      },
-                    ],
-                  },
-                },
-              },
-            },
-          ],
-        },
-        include: {
-          penjualanItems: {
-            include: {
-              product: {
-                select: {
-                  jenis_product: true,
-                  nama_product: true,
-                  ukuran_product: true,
-                  hargaJual: true,
+                    },
+                    // {
+                    //   penjualanItems: {
+                    //     some: {
+                    //       quantity: {
+                    //         equals: parseInt(query) || undefined,
+                    //       },
+                    //     },
+                    //   },
+                    // },
+                  ],
                 },
               },
             },
           },
+        ],
+      },
+      include: {
+        penjualanItems: {
+          include: {
+            product: true,
+          },
         },
-      });
+      },
+    });
 
-      return penjualanSearchResult;
-    } catch (error) {
-      console.error('Error searching penjualan:', error);
-      throw new Error('Error searching penjualan');
-    }
+   return penjualanSearchResult;
+  } catch (error) {
+    // Handle the error appropriately
+    console.error("Error in searchPenjualan:", error);
+    throw error;
   }
+}
 
   
   }

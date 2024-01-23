@@ -50,8 +50,8 @@ model Product {
   hargaJual         Int?
   createdAt         DateTime         @default(now())
   productSources    ProductSources[]
+  PenjualanItem     PenjualanItem[]
   penjualanProducts Penjualan[]
-  penjualanItems    PenjualanItem[]
 }
 
 model ProductSources {
