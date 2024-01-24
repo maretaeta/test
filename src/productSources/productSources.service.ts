@@ -26,7 +26,23 @@ export class ProductSourcesService {
 		return data;
 	}
 
-// check nama toko
+// Ensure the store (toko) exists, handling unique constraint gracefully
+async ensureStoreExists(namatoko: string, alamat_toko: string): Promise<void> {
+    try {
+        // Attempt to upsert (update or insert) the store
+        await this.prisma.toko.upsert({
+            where: { namatoko },
+            update: { alamat_toko },
+            create: { namatoko, alamat_toko },
+        });
+    } catch (error) {
+        console.error('Error ensuring store exists:', error);
+        throw new Error('Failed to ensure store exists.');
+    }
+}
+
+
+// Check nama toko
 async checkIfStoreExists(namatoko: string, alamat_toko: string): Promise<boolean> {
     const existingStore = await this.prisma.toko.findFirst({
         where: {
@@ -37,21 +53,14 @@ async checkIfStoreExists(namatoko: string, alamat_toko: string): Promise<boolean
     return !!existingStore;
 }
 
+// Main function to create or update productSources
 async createProductSources(data: ProductSources): Promise<ProductSources> {
     const totalHarga = this.calculateTotalHarga(data.jumlah_productSources, data.pembelian_productSources, data.ongkosProses_productSources);
     const harga = totalHarga / data.jumlah_productSources;
 
     try {
-        const storeExists = await this.checkIfStoreExists(data.nama_toko, data.alamat_toko);
-
-        if (!storeExists) {
-            await this.prisma.toko.create({
-                data: {
-                    namatoko: data.nama_toko,
-                    alamat_toko: data.alamat_toko,
-                },
-            });
-        }
+        // Ensure the store (toko) exists
+        await this.ensureStoreExists(data.nama_toko, data.alamat_toko);
 
         // Check if the product already exists
         const existingProduct = await this.prisma.product.findFirst({
@@ -104,6 +113,8 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
         throw new Error('Failed to create or update productSources.');
     }
 }
+
+
 
 async updateProductSource(id_productSources: number, data: ProductSources): Promise<ProductSources | null> {
     try {
@@ -192,14 +203,35 @@ async deleteProductSources(id_productSources: number): Promise<ProductSources> {
             where: { productId: productSources.product.id_product },
         });
 
+        // Check if the product has other sources
+        const otherSources = await this.prisma.productSources.findMany({
+            where: {
+                id_product: productSources.product.id_product,
+                NOT: {
+                    id_productSources: productSources.id_productSources,
+                },
+            },
+        });
+
+        if (otherSources.length > 0) {
+            // There are other sources, update the product stock
+            const totalStock = otherSources.reduce((acc, source) => acc + source.jumlah_productSources, 0);
+            await this.prisma.product.update({
+                where: { id_product: productSources.product.id_product },
+                data: {
+                    stok_product: totalStock,
+                },
+            });
+        } else {
+            // No other sources, delete the product
+            await this.prisma.product.delete({
+                where: { id_product: productSources.product.id_product },
+            });
+        }
+
         // Delete productSources
         await this.prisma.productSources.delete({
             where: { id_productSources: Number(id_productSources) },
-        });
-
-        // Delete product
-        await this.prisma.product.delete({
-            where: { id_product: productSources.product.id_product },
         });
 
         return productSources;

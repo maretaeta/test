@@ -44,7 +44,8 @@ async getPenjualan(id_penjualan: number): Promise<penjualan | null> {
               jenis_product: true, 
               nama_product: true,
               ukuran_product: true,
-              harga_product: true 
+              harga_product: true,
+              hargaJual: true,
             },
           },
         },

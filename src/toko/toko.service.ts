@@ -6,10 +6,12 @@ import { toko } from "./toko.model";
 export class tokoService {
   constructor(private prisma: PrismaService) {}
 
+  // menampilkan semua toko
   async getAllToko(): Promise<toko[]> {
     return this.prisma.toko.findMany();
   }
 
+  // menampilkan toko berdasarkan ID
   async getToko(id_toko: number): Promise<toko | null> {
     try {
       const result = await this.prisma.toko.findUnique({ where: { id_toko: Number(id_toko) } });
@@ -22,6 +24,7 @@ export class tokoService {
     }
   }
 
+  // membuat toko
   async createToko(data: toko): Promise<toko> {
     try {
       return this.prisma.toko.create({
@@ -32,6 +35,7 @@ export class tokoService {
     }
   }
 
+  // update toko
   async updateToko(id_toko: number, data: toko): Promise<toko> {
     try {
       return this.prisma.toko.update({
@@ -47,17 +51,58 @@ export class tokoService {
     }
   }
 
-  async deleteToko(id_toko: number): Promise<toko> {
-    try {
-      return this.prisma.toko.delete({
-        where: { id_toko: Number(id_toko) },
-      });
-    } catch (error) {
-      throw new NotFoundException(`Toko with ID ${id_toko} not found`);
-    }
-  }
 
-  async searchToko(keyword: string): Promise<toko[]> {
+  // delete toko
+  async deleteToko(id_toko: number): Promise<void> {
+    try {
+        console.log(`Deleting Toko with ID: ${id_toko}`);
+
+        // Fetch the nama_toko value for the store being deleted
+        const storeToDelete = await this.prisma.toko.findUnique({
+            where: { id_toko: Number(id_toko) },
+            select: { namatoko: true },
+        });
+
+        if (!storeToDelete) {
+            throw new NotFoundException(`Toko with ID ${id_toko} not found`);
+        }
+
+        // Fetch the new value for nama_toko in the penjualan table (e.g., 'Unknown')
+        const newNamaTokoValue = 'Unknown';
+
+        // Check if the newNamaTokoValue is a valid value in the toko table
+        const existingToko = await this.prisma.toko.findFirst({
+            where: { namatoko: newNamaTokoValue },
+        });
+
+        if (!existingToko) {
+            console.error(`Invalid value for nama_toko: ${newNamaTokoValue}`);
+            // Handle this error as per your business logic
+            return;
+        }
+
+        // Update the nama_toko value in the penjualan table to a default or placeholder value
+        const updatePenjualanResult = await this.prisma.penjualan.updateMany({
+            where: { nama_toko: storeToDelete.namatoko },
+            data: { nama_toko: newNamaTokoValue },
+        });
+
+        console.log(`Update Penjualan Result:`, updatePenjualanResult);
+
+        const deleteResult = await this.prisma.toko.delete({
+            where: { id_toko: Number(id_toko) },
+        });
+
+        console.log(`Delete Result:`, deleteResult);
+    } catch (error) {
+        console.error(`Error deleting Toko with ID ${id_toko}:`, error);
+        throw new NotFoundException(`Toko with ID ${id_toko} not found`);
+    }
+}
+
+
+// pencarian toko
+async searchToko(keyword: string): Promise<toko[]> {
     try {
       return this.prisma.toko.findMany({
         where: {
@@ -73,6 +118,7 @@ export class tokoService {
     }
   }
 
+  // total toko yang ada
   async getTotalToko(): Promise<number> {
     try {
       const totalToko = await this.prisma.toko.count();
