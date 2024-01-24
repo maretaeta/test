@@ -155,7 +155,7 @@ async getPenjualan(id_penjualan: number): Promise<penjualan | null> {
     });
   }
 
- // delete penjualan
+// delete penjualan
 async deletePenjualan(id_penjualan: number): Promise<void> {
   try {
     const deletedPenjualan = await this.prisma.penjualan.findUnique({
@@ -362,7 +362,6 @@ async deletePenjualan(id_penjualan: number): Promise<void> {
 
    return penjualanSearchResult;
   } catch (error) {
-    // Handle the error appropriately
     console.error("Error in searchPenjualan:", error);
     throw error;
   }

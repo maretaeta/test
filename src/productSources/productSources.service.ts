@@ -42,11 +42,9 @@ async createProductSources(data: ProductSources): Promise<ProductSources> {
     const harga = totalHarga / data.jumlah_productSources;
 
     try {
-        // Check if the store (toko) already exists
         const storeExists = await this.checkIfStoreExists(data.nama_toko, data.alamat_toko);
 
         if (!storeExists) {
-            // If the store doesn't exist, create it
             await this.prisma.toko.create({
                 data: {
                     namatoko: data.nama_toko,
@@ -167,7 +165,6 @@ async updateProductSource(id_productSources: number, data: ProductSources): Prom
     }
 }
 
-
 async deleteProductSources(id_productSources: number): Promise<ProductSources> {
     try {
         const productSources = await this.prisma.productSources.findUnique({
@@ -181,64 +178,39 @@ async deleteProductSources(id_productSources: number): Promise<ProductSources> {
             throw new NotFoundException('ProductSources not found');
         }
 
-        const { nama_toko, alamat_toko } = productSources;
-
-        // Check if there are other ProductSources records referencing the same store
-        const otherProductSources = await this.prisma.productSources.findMany({
-            where: {
-                nama_toko,
-                alamat_toko,
-                id_productSources: { not: Number(id_productSources) },
-            },
+        // Check if there are associated transactions (PenjualanItem)
+        const hasTransactions = await this.prisma.penjualanItem.findFirst({
+            where: { productId: productSources.product.id_product },
         });
 
-        // If no other ProductSources records, delete the store from the toko table
-        if (otherProductSources.length === 0) {
-            // Check if the toko record exists before attempting to delete
-            const existingToko = await this.prisma.toko.findUnique({
-                where: {
-                    namatoko: nama_toko,
-                    alamat_toko: alamat_toko,
-                },
-            });
-
-            if (existingToko) {
-                await this.prisma.toko.delete({
-                    where: {
-                        namatoko: nama_toko,
-                        alamat_toko: alamat_toko,
-                    },
-                });
-            } else {
-                console.error('Toko record not found for deletion:', { namatoko: nama_toko, alamat_toko });
-            }
+        if (hasTransactions) {
+            throw new Error('Data has already been sold. Cannot be deleted.');
         }
 
-        // Delete the productSources record
+        // Delete associated PenjualanItem records
+        await this.prisma.penjualanItem.deleteMany({
+            where: { productId: productSources.product.id_product },
+        });
+
+        // Delete productSources
         await this.prisma.productSources.delete({
             where: { id_productSources: Number(id_productSources) },
         });
 
-        // Delete the corresponding product record if it exists
-        if (productSources.product) {
-            await this.prisma.product.delete({
-                where: { id_product: productSources.product.id_product },
-            });
-        }
+        // Delete product
+        await this.prisma.product.delete({
+            where: { id_product: productSources.product.id_product },
+        });
 
         return productSources;
     } catch (error) {
         if (error instanceof NotFoundException) {
             return null;
         }
-
         console.error(error);
         throw new Error('Failed to delete productSources or related records.');
     }
 }
-
-
-
 
     private calculateTotalHarga(jumlah: number, harga: number, ongkosProses: number): number {
         return harga + ongkosProses;
